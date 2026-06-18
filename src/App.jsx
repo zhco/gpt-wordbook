@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
@@ -380,25 +380,47 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
 
 function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }) {
   const [speaking, setSpeaking] = useState(false)
+  const audioRef = useRef(null)
 
-  const speak = async () => {
+  const speak = () => {
     if (speaking) return
-    try {
-      setSpeaking(true)
-      await NativeTTS.stop()
-      await NativeTTS.speak({
-        text: wordData.word,
-        lang: 'en-US',
-        rate: 0.9,
-        pitch: 1.0,
-        volume: 1.0
-      })
-    } catch (e) {
-      console.error('TTS speak error:', e)
-    } finally {
-      setSpeaking(false)
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
     }
+    setSpeaking(true)
+
+    // 优先使用有道词典真人发音（在中国网络下最可靠）
+    const audio = new Audio(`https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(wordData.word)}&type=2`)
+    audioRef.current = audio
+    audio.onended = () => setSpeaking(false)
+    audio.onerror = async () => {
+      // 有道失败时，尝试原生 TTS
+      try {
+        await NativeTTS.speak({
+          text: wordData.word,
+          lang: 'en-US',
+          rate: 0.9,
+          pitch: 1.0,
+          volume: 1.0
+        })
+        setTimeout(() => setSpeaking(false), 2000)
+      } catch (e) {
+        console.error('All speak methods failed:', e)
+        setSpeaking(false)
+      }
+    }
+    audio.play()
   }
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
+  }, [])
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
