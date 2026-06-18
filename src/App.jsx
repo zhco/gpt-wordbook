@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
@@ -27,6 +27,30 @@ function App() {
   const [showSearch, setShowSearch] = useState(false)
   const [fuse, setFuse] = useState(null)
   const [wordsList, setWordsList] = useState([])
+  const [ttsReady, setTtsReady] = useState(false)
+
+  // App 启动时初始化 TTS 引擎
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      let attempts = 0
+      const checkReady = async () => {
+        try {
+          await TextToSpeech.speak({ text: 'test', lang: 'en-US', rate: 0.01, volume: 0 })
+          setTtsReady(true)
+        } catch (e) {
+          attempts++
+          if (attempts < 20) {
+            setTimeout(checkReady, 300)
+          } else {
+            // TTS 不可用，引导用户安装
+            console.warn('TTS not available after 6s, opening install')
+            TextToSpeech.openInstall().catch(() => {})
+          }
+        }
+      }
+      setTimeout(checkReady, 800)
+    }
+  }, [])
 
   useEffect(() => {
     const words = Object.entries(wordData).map(([word, data]) => ({ word, ...data }))
@@ -91,6 +115,7 @@ function App() {
         onBack={() => setSelectedWord(null)}
         isFavorite={isFavorite(selectedWord.word)}
         onToggleFavorite={() => toggleFavorite(selectedWord.word)}
+        ttsReady={ttsReady}
       />
     )
   }
@@ -356,113 +381,35 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
   )
 }
 
-function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite }) {
+function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }) {
   const [speaking, setSpeaking] = useState(false)
-  const [audioUrl, setAudioUrl] = useState('')
-  const audioRef = useRef(null)
-  const ttsReady = useRef(false)
-  const ttsInitTimer = useRef(null)
-
-  // 初始化 TTS 引擎（等待异步初始化完成）
-  useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      // 先触发 openInstall 确保系统 TTS 数据可用
-      TextToSpeech.openInstall().catch(() => {})
-      
-      // 轮询等待 TTS 初始化完成（最多等 3 秒）
-      let attempts = 0
-      const checkReady = async () => {
-        try {
-          await TextToSpeech.speak({ text: '', lang: 'en-US', rate: 0.01, volume: 0 })
-          ttsReady.current = true
-        } catch (e) {
-          attempts++
-          if (attempts < 15 && !ttsReady.current) {
-            ttsInitTimer.current = setTimeout(checkReady, 200)
-          }
-        }
-      }
-      // 延迟 500ms 后开始检查，给 TTS 引擎时间初始化
-      ttsInitTimer.current = setTimeout(checkReady, 500)
-    }
-
-    // 同时获取在线音频作为 fallback
-    fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(wordData.word)}`)
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data) && data[0]) {
-          const phonetics = data[0].phonetics || []
-          for (const p of phonetics) {
-            if (p.audio && p.audio.startsWith('https')) {
-              setAudioUrl(p.audio)
-              break
-            }
-          }
-        }
-      })
-      .catch(() => {})
-
-    return () => {
-      if (ttsInitTimer.current) clearTimeout(ttsInitTimer.current)
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
-    }
-  }, [wordData.word])
 
   const speak = async () => {
+    if (speaking) return
     try {
       setSpeaking(true)
-
-      // 方案1: 原生 TTS（已初始化时使用）
-      if (Capacitor.isNativePlatform() && ttsReady.current) {
-        try {
-          await TextToSpeech.stop()
-          await TextToSpeech.speak({
-            text: wordData.word,
-            lang: 'en-US',
-            rate: 0.9,
-            pitch: 1.0,
-            volume: 1.0
-          })
-          setSpeaking(false)
-          return
-        } catch (e) {
-          console.warn('Native TTS speak failed:', e)
-        }
-      }
-
-      // 方案2: 在线真人发音 MP3
-      if (audioUrl) {
-        if (audioRef.current) audioRef.current.pause()
-        const audio = new Audio(audioUrl)
-        audioRef.current = audio
-        audio.onended = () => setSpeaking(false)
-        audio.onerror = () => {
-          setSpeaking(false)
-          // 如果在线音频也失败，尝试 Web Speech API
-          tryWebSpeech()
-        }
-        audio.play()
+      await TextToSpeech.stop()
+      await TextToSpeech.speak({
+        text: wordData.word,
+        lang: 'en-US',
+        rate: 0.9,
+        pitch: 1.0,
+        volume: 1.0
+      })
+    } catch (e) {
+      console.error('TTS speak error:', e)
+      // 如果原生 TTS 失败，尝试 Web Speech API
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+        const utterance = new SpeechSynthesisUtterance(wordData.word)
+        utterance.lang = 'en-US'
+        utterance.rate = 0.9
+        utterance.onend = () => setSpeaking(false)
+        utterance.onerror = () => setSpeaking(false)
+        window.speechSynthesis.speak(utterance)
         return
       }
-
-      // 方案3: Web Speech API
-      tryWebSpeech()
-    } catch (e) {
-      console.error('All speak methods failed:', e)
-      setSpeaking(false)
-    }
-  }
-
-  const tryWebSpeech = () => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(wordData.word)
-      utterance.lang = 'en-US'
-      utterance.rate = 0.9
-      utterance.onend = () => setSpeaking(false)
-      utterance.onerror = () => setSpeaking(false)
-      window.speechSynthesis.speak(utterance)
-    } else {
+    } finally {
       setSpeaking(false)
     }
   }
