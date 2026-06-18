@@ -126,14 +126,24 @@ public class NativeTTSPlugin extends Plugin {
         call.resolve(ret);
     }
 
-    @Override
-    public void destroy() {
+    @PluginMethod
+    public void cleanup(PluginCall call) {
         if (tts != null) {
             tts.stop();
             tts.shutdown();
             tts = null;
             initialized = false;
         }
-        super.destroy();
+        call.resolve();
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
+            tts = null;
+            initialized = false;
+        }
     }
 }
