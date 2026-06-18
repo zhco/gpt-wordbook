@@ -80,9 +80,9 @@ public class NativeTTSPlugin extends Plugin {
         if (!ensureInitialized(call)) return;
 
         String lang = call.getString("lang", "en-US");
-        float rate = (float) call.getDouble("rate", 1.0);
-        float pitch = (float) call.getDouble("pitch", 1.0);
-        float volume = (float) call.getDouble("volume", 1.0);
+        float rate = call.getDouble("rate", 1.0).floatValue();
+        float pitch = call.getDouble("pitch", 1.0).floatValue();
+        float volume = call.getDouble("volume", 1.0).floatValue();
 
         // 设置语言
         Locale locale = Locale.US;
