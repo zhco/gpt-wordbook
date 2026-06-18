@@ -378,6 +378,9 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
   )
 }
 
+// 发音音频缓存（同一个单词只请求一次有道 API）
+const audioCache = {}
+
 function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }) {
   const [speaking, setSpeaking] = useState(false)
   const audioRef = useRef(null)
@@ -390,8 +393,19 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }
     }
     setSpeaking(true)
 
-    // 优先使用有道词典真人发音（在中国网络下最可靠）
-    const audio = new Audio(`https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(wordData.word)}&type=2`)
+    // 优先使用缓存
+    if (audioCache[wordData.word]) {
+      const audio = new Audio(audioCache[wordData.word])
+      audioRef.current = audio
+      audio.onended = () => setSpeaking(false)
+      audio.onerror = () => setSpeaking(false)
+      audio.play()
+      return
+    }
+
+    // 从有道词典获取真人发音并缓存
+    const url = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(wordData.word)}&type=2`
+    const audio = new Audio(url)
     audioRef.current = audio
     audio.onended = () => setSpeaking(false)
     audio.onerror = async () => {
@@ -410,6 +424,8 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }
         setSpeaking(false)
       }
     }
+    // 缓存音频 URL（浏览器会自动缓存音频数据）
+    audioCache[wordData.word] = url
     audio.play()
   }
 
