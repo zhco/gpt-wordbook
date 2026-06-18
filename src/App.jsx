@@ -3,6 +3,7 @@ import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volum
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
 import { TextToSpeech } from '@capacitor-community/text-to-speech'
+import { Capacitor } from '@capacitor/core'
 import wordData from './data/words.json'
 
 const SECTIONS = [
@@ -356,18 +357,51 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
 }
 
 function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite }) {
+  const [speaking, setSpeaking] = useState(false)
+
   const speak = async () => {
     try {
-      await TextToSpeech.stop()
-      await TextToSpeech.speak({
-        text: wordData.word,
-        lang: 'en-US',
-        rate: 0.9,
-        pitch: 1.0,
-        volume: 1.0
-      })
+      setSpeaking(true)
+
+      // 方案1: 使用 Capacitor 原生 TTS
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await TextToSpeech.stop()
+          await TextToSpeech.speak({
+            text: wordData.word,
+            lang: 'en-US',
+            rate: 0.9,
+            pitch: 1.0,
+            volume: 1.0
+          })
+          setSpeaking(false)
+          return
+        } catch (e) {
+          console.warn('Native TTS failed, trying fallback:', e)
+        }
+      }
+
+      // 方案2: 使用 Web Speech API (fallback)
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+        const utterance = new SpeechSynthesisUtterance(wordData.word)
+        utterance.lang = 'en-US'
+        utterance.rate = 0.9
+        utterance.onend = () => setSpeaking(false)
+        utterance.onerror = () => setSpeaking(false)
+        window.speechSynthesis.speak(utterance)
+        return
+      }
+
+      // 方案3: 使用 Audio + Google TTS (最终 fallback)
+      const audio = new Audio()
+      audio.src = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(wordData.word)}&tl=en&client=tw-ob`
+      audio.onended = () => setSpeaking(false)
+      audio.onerror = () => setSpeaking(false)
+      audio.play()
     } catch (e) {
-      console.error('TTS error:', e)
+      console.error('All TTS methods failed:', e)
+      setSpeaking(false)
     }
   }
 
@@ -391,7 +425,7 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite }) {
             <div className="text-3xl font-bold text-gray-900">{wordData.word}</div>
             <button
               onClick={speak}
-              className="p-2 rounded-full bg-sky-50 text-sky-500 hover:bg-sky-100 transition"
+              className={`p-2 rounded-full transition ${speaking ? 'bg-sky-500 text-white animate-pulse' : 'bg-sky-50 text-sky-500 hover:bg-sky-100'}`}
               title="播放发音"
             >
               <Volume2 size={20} />
