@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
-import { TextToSpeech } from '@capacitor-community/text-to-speech'
-import { Capacitor } from '@capacitor/core'
 import wordData from './data/words.json'
 
 const SECTIONS = [
@@ -358,51 +356,44 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
 
 function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite }) {
   const [speaking, setSpeaking] = useState(false)
+  const [audioUrl, setAudioUrl] = useState('')
+  const audioRef = useRef(null)
 
-  const speak = async () => {
-    try {
-      setSpeaking(true)
-
-      // 方案1: 使用 Capacitor 原生 TTS
-      if (Capacitor.isNativePlatform()) {
-        try {
-          await TextToSpeech.stop()
-          await TextToSpeech.speak({
-            text: wordData.word,
-            lang: 'en-US',
-            rate: 0.9,
-            pitch: 1.0,
-            volume: 1.0
-          })
-          setSpeaking(false)
-          return
-        } catch (e) {
-          console.warn('Native TTS failed, trying fallback:', e)
+  useEffect(() => {
+    // 从免费词典 API 获取真人发音音频
+    fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(wordData.word)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data) && data[0]) {
+          const phonetics = data[0].phonetics || []
+          for (const p of phonetics) {
+            if (p.audio && p.audio.startsWith('https')) {
+              setAudioUrl(p.audio)
+              break
+            }
+          }
         }
+      })
+      .catch(() => {})
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
       }
-
-      // 方案2: 使用 Web Speech API (fallback)
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel()
-        const utterance = new SpeechSynthesisUtterance(wordData.word)
-        utterance.lang = 'en-US'
-        utterance.rate = 0.9
-        utterance.onend = () => setSpeaking(false)
-        utterance.onerror = () => setSpeaking(false)
-        window.speechSynthesis.speak(utterance)
-        return
-      }
-
-      // 方案3: 使用 Audio + Google TTS (最终 fallback)
-      const audio = new Audio()
-      audio.src = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(wordData.word)}&tl=en&client=tw-ob`
-      audio.onended = () => setSpeaking(false)
-      audio.onerror = () => setSpeaking(false)
-      audio.play()
-    } catch (e) {
-      console.error('All TTS methods failed:', e)
-      setSpeaking(false)
     }
+  }, [wordData.word])
+
+  const speak = () => {
+    if (!audioUrl) return
+    if (audioRef.current) {
+      audioRef.current.pause()
+    }
+    setSpeaking(true)
+    const audio = new Audio(audioUrl)
+    audioRef.current = audio
+    audio.onended = () => setSpeaking(false)
+    audio.onerror = () => setSpeaking(false)
+    audio.play()
   }
 
   return (
