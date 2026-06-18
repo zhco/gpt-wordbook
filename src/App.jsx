@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
-import { TextToSpeech } from '@capacitor-community/text-to-speech'
-import { Capacitor } from '@capacitor/core'
+import { registerPlugin } from '@capacitor/core'
 import wordData from './data/words.json'
+
+// 注册自定义原生 TTS 插件
+const NativeTTS = registerPlugin('NativeTTS')
 
 const SECTIONS = [
   { id: 'home', label: '单词本', icon: BookOpen },
@@ -31,25 +33,20 @@ function App() {
 
   // App 启动时初始化 TTS 引擎
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      let attempts = 0
-      const checkReady = async () => {
-        try {
-          await TextToSpeech.speak({ text: 'test', lang: 'en-US', rate: 0.01, volume: 0 })
-          setTtsReady(true)
-        } catch (e) {
-          attempts++
-          if (attempts < 20) {
-            setTimeout(checkReady, 300)
-          } else {
-            // TTS 不可用，引导用户安装
-            console.warn('TTS not available after 6s, opening install')
-            TextToSpeech.openInstall().catch(() => {})
-          }
+    const initTTS = async () => {
+      try {
+        // 等待插件加载
+        await new Promise(r => setTimeout(r, 1000))
+        const result = await NativeTTS.isAvailable()
+        setTtsReady(result.available)
+        if (!result.available) {
+          console.warn('TTS not available on this device')
         }
+      } catch (e) {
+        console.warn('TTS init error:', e)
       }
-      setTimeout(checkReady, 800)
     }
+    initTTS()
   }, [])
 
   useEffect(() => {
@@ -388,8 +385,8 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }
     if (speaking) return
     try {
       setSpeaking(true)
-      await TextToSpeech.stop()
-      await TextToSpeech.speak({
+      await NativeTTS.stop()
+      await NativeTTS.speak({
         text: wordData.word,
         lang: 'en-US',
         rate: 0.9,
@@ -398,17 +395,6 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }
       })
     } catch (e) {
       console.error('TTS speak error:', e)
-      // 如果原生 TTS 失败，尝试 Web Speech API
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel()
-        const utterance = new SpeechSynthesisUtterance(wordData.word)
-        utterance.lang = 'en-US'
-        utterance.rate = 0.9
-        utterance.onend = () => setSpeaking(false)
-        utterance.onerror = () => setSpeaking(false)
-        window.speechSynthesis.speak(utterance)
-        return
-      }
     } finally {
       setSpeaking(false)
     }
