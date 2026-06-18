@@ -1,0 +1,104 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download word data and generate IPA
+        run: |
+          mkdir -p src/data
+          curl -L -o src/data/gptwords.json \
+            "https://raw.githubusercontent.com/Ceelog/DictionaryByGPT4/main/gptwords.json"
+          npm install phonemize
+          node -e "
+          const { toIPA } = require('phonemize');
+          const fs = require('fs');
+          const readline = require('readline');
+          const data = {};
+          let count = 0;
+          const rl = readline.createInterface({
+            input: fs.createReadStream('src/data/gptwords.json', { encoding: 'utf-8' })
+          });
+          rl.on('line', (line) => {
+            try {
+              const obj = JSON.parse(line.trim());
+              const w = obj.word;
+              if (w) {
+                let ipa = '';
+                try { ipa = toIPA(w); } catch(e) {}
+                data[w] = { word: w, content: obj.content || '', ipa: ipa };
+                count++;
+              }
+            } catch(e) {}
+          });
+          rl.on('close', () => {
+            fs.writeFileSync('src/data/words.json', JSON.stringify(data));
+            console.log('Generated IPA for ' + count + ' words');
+          });
+          "
+          npm uninstall phonemize
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync to Capacitor Android
+        run: npx cap sync android
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpt-wordbook-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Create Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+          name: "GPT 单词本 ${{ github.ref_name }}"
+          body: |
+            基于 GPT-4 生成的 8000+ 英语单词深度学习 Android 应用
+
+            ## 功能特性
+            - 完全离线使用，无需网络
+            - 8714 个 GPT-4 深度解析单词
+            - IPA 国际音标显示
+            - TTS 语音发音
+            - 智能搜索（模糊匹配）
+            - 按字母浏览
+            - 每日一词
+            - 收藏功能
+            - 浏览历史
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

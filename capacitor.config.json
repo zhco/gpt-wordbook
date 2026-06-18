@@ -1,0 +1,8 @@
+{
+  "appId": "com.gptwordbook.app",
+  "appName": "GPTWordbook",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
