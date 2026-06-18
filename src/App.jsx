@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
+import { TextToSpeech } from '@capacitor-community/text-to-speech'
 import wordData from './data/words.json'
 
 const SECTIONS = [
@@ -355,13 +356,18 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
 }
 
 function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite }) {
-  const speak = () => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(wordData.word)
-      utterance.lang = 'en-US'
-      utterance.rate = 0.9
-      window.speechSynthesis.speak(utterance)
+  const speak = async () => {
+    try {
+      await TextToSpeech.stop()
+      await TextToSpeech.speak({
+        text: wordData.word,
+        lang: 'en-US',
+        rate: 0.9,
+        pitch: 1.0,
+        volume: 1.0
+      })
+    } catch (e) {
+      console.error('TTS error:', e)
     }
   }
 
