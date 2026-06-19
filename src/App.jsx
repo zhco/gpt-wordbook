@@ -346,6 +346,13 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord }) {
       return saved ? JSON.parse(saved) : null
     } catch { return null }
   })
+
+  // 如果有已保存的计划，自动切换到每日学习视图
+  useEffect(() => {
+    if (plan && studyView === 'plan') {
+      setStudyView('daily')
+    }
+  }, [plan])
   const [dailyWords, setDailyWords] = useState([])
   const [masteredWords, setMasteredWords] = useState(() => {
     try { return JSON.parse(localStorage.getItem('gptwordbook_mastered') || '{}') } catch { return {} }
