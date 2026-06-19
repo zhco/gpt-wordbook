@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2, BarChart3, CheckCircle, XCircle, Info } from 'lucide-react'
+import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2, BarChart3, CheckCircle, XCircle, Info, GraduationCap, Calendar, Play, Check, ChevronRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
 import { registerPlugin } from '@capacitor/core'
@@ -33,6 +33,7 @@ function LevelTag({ word }) {
 
 const SECTIONS = [
   { id: 'home', label: '单词本', icon: BookOpen },
+  { id: 'study', label: '学习', icon: GraduationCap },
   { id: 'favorites', label: '收藏', icon: Heart },
   { id: 'settings', label: '设置', icon: Settings },
 ]
@@ -53,6 +54,7 @@ function App() {
   const [fuse, setFuse] = useState(null)
   const [wordsList, setWordsList] = useState([])
   const [ttsReady, setTtsReady] = useState(false)
+  const [studyView, setStudyView] = useState('plan') // 'plan' or 'daily'
 
   // App 启动时初始化 TTS 引擎
   useEffect(() => {
@@ -220,6 +222,9 @@ function App() {
         {currentView === 'home' && (
           <HomeView dailyWord={dailyWord} onOpenWord={openWord} wordsList={wordsList} isFavorite={isFavorite} />
         )}
+        {currentView === 'study' && (
+          <StudyView wordsList={wordsList} studyView={studyView} setStudyView={setStudyView} onOpenWord={openWord} />
+        )}
         {currentView === 'favorites' && (
           <FavoritesView favorites={favorites} wordsList={wordsList} onOpenWord={openWord} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
         )}
@@ -327,6 +332,266 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+// 学习模式组件
+function StudyView({ wordsList, studyView, setStudyView, onOpenWord }) {
+  const STORAGE_KEY = 'gptwordbook_study_plan'
+
+  const [plan, setPlan] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      return saved ? JSON.parse(saved) : null
+    } catch { return null }
+  })
+  const [dailyWords, setDailyWords] = useState([])
+  const [masteredWords, setMasteredWords] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('gptwordbook_mastered') || '{}') } catch { return {} }
+  })
+
+  // 获取指定级别的所有单词
+  const getWordsByLevel = (level) => {
+    return wordsList.filter(item => {
+      const wLevel = getWordLevel(item.word)
+      if (level === 'cet4') return wLevel === 'cet4' || wLevel === 'cet4+6'
+      if (level === 'cet6') return wLevel === 'cet6' || wLevel === 'cet4+6'
+      return true // 'all'
+    })
+  }
+
+  // 伪随机洗牌（基于种子，保证每天固定顺序）
+  const seededShuffle = (array, seed) => {
+    const arr = [...array]
+    let s = seed
+    for (let i = arr.length - 1; i > 0; i--) {
+      s = (s * 16807 + 0) % 2147483647
+      const j = s % (i + 1)
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+    return arr
+  }
+
+  // 创建学习计划
+  const createPlan = (level, dailyCount) => {
+    const words = getWordsByLevel(level)
+    const seed = Date.now()
+    const shuffled = seededShuffle(words, seed)
+    const totalDays = Math.ceil(shuffled.length / dailyCount)
+    const newPlan = {
+      level,
+      dailyCount,
+      totalDays,
+      totalWords: shuffled.length,
+      seed,
+      startDate: new Date().toISOString().split('T')[0],
+      currentDay: 1,
+    }
+    setPlan(newPlan)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newPlan))
+    setStudyView('daily')
+  }
+
+  // 获取今日单词
+  useEffect(() => {
+    if (!plan || studyView !== 'daily') return
+    const words = getWordsByLevel(plan.level)
+    const shuffled = seededShuffle(words, plan.seed)
+    const startIdx = (plan.currentDay - 1) * plan.dailyCount
+    const todayWords = shuffled.slice(startIdx, startIdx + plan.dailyCount)
+    setDailyWords(todayWords)
+  }, [plan, studyView, wordsList])
+
+  // 标记单词已掌握
+  const toggleMastered = (word) => {
+    setMasteredWords(prev => {
+      const next = { ...prev, [word]: !prev[word] }
+      localStorage.setItem('gptwordbook_mastered', JSON.stringify(next))
+      return next
+    })
+  }
+
+  // 完成今日学习
+  const finishToday = () => {
+    if (!plan) return
+    const nextDay = Math.min(plan.currentDay + 1, plan.totalDays)
+    const updated = { ...plan, currentDay: nextDay }
+    setPlan(updated)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+  }
+
+  // 重置计划
+  const resetPlan = () => {
+    if (!confirm('确定要重置学习计划吗？进度将清零。')) return
+    setPlan(null)
+    setMasteredWords({})
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem('gptwordbook_mastered')
+    setStudyView('plan')
+  }
+
+  // 学习计划设置页
+  if (studyView === 'plan' && !plan) {
+    const levelOptions = [
+      { id: 'cet4', label: 'CET-4 四级', desc: `${getWordsByLevel('cet4').length} 词`, color: 'border-green-400 bg-green-50' },
+      { id: 'cet6', label: 'CET-6 六级', desc: `${getWordsByLevel('cet6').length} 词`, color: 'border-blue-400 bg-blue-50' },
+      { id: 'all', label: '全部词汇', desc: `${wordsList.length} 词`, color: 'border-purple-400 bg-purple-50' },
+    ]
+    const countOptions = [5, 10, 15, 20, 30, 50]
+
+    return (
+      <StudyPlanSetup
+        levelOptions={levelOptions}
+        countOptions={countOptions}
+        onStart={createPlan}
+      />
+    )
+  }
+
+  // 每日学习页
+  if (studyView === 'daily' && plan) {
+    const masteredCount = dailyWords.filter(w => masteredWords[w.word]).length
+    const progress = dailyWords.length > 0 ? Math.round(masteredCount / dailyWords.length * 100) : 0
+    const overallProgress = Math.round((plan.currentDay - 1) / plan.totalDays * 100)
+
+    return (
+      <div className="p-4">
+        {/* 进度概览 */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-500">第 {plan.currentDay} / {plan.totalDays} 天</span>
+            <span className="text-sm font-bold text-sky-500">{overallProgress}%</span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
+            <div className="bg-sky-500 h-2 rounded-full transition-all" style={{width: `${overallProgress}%`}}></div>
+          </div>
+          <div className="flex items-center justify-between text-xs text-gray-400">
+            <span>今日进度: {masteredCount}/{dailyWords.length} ({progress}%)</span>
+            <button onClick={resetPlan} className="text-red-400">重置计划</button>
+          </div>
+        </div>
+
+        {/* 今日单词列表 */}
+        <div className="space-y-2">
+          {dailyWords.map((item, idx) => {
+            const isMastered = masteredWords[item.word]
+            return (
+              <div key={item.word} className={`bg-white rounded-xl p-3 shadow-sm border transition ${isMastered ? 'border-green-200 bg-green-50/50' : 'border-gray-100'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-xs text-gray-400 w-6">{idx + 1}</span>
+                    <button onClick={() => onOpenWord(item)} className="font-semibold text-gray-900 truncate">
+                      {item.word}
+                    </button>
+                    <LevelTag word={item.word} />
+                  </div>
+                  <button
+                    onClick={() => toggleMastered(item.word)}
+                    className={`p-2 rounded-full transition shrink-0 ${isMastered ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`}
+                  >
+                    <Check size={16} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* 完成按钮 */}
+        {progress === 100 && plan.currentDay < plan.totalDays && (
+          <div className="mt-4">
+            <button
+              onClick={finishToday}
+              className="w-full py-3 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition flex items-center justify-center gap-2"
+            >
+              完成今日学习，进入第 {plan.currentDay + 1} 天
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        )}
+        {progress === 100 && plan.currentDay >= plan.totalDays && (
+          <div className="mt-4 bg-green-50 rounded-xl p-4 text-center">
+            <CheckCircle size={32} className="text-green-500 mx-auto mb-2" />
+            <p className="font-bold text-green-700">恭喜完成全部学习计划！</p>
+            <button onClick={resetPlan} className="mt-2 text-sm text-sky-500 underline">开始新的计划</button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return null
+}
+
+// 学习计划设置组件
+function StudyPlanSetup({ levelOptions, countOptions, onStart }) {
+  const [selectedLevel, setSelectedLevel] = useState(null)
+  const [selectedCount, setSelectedCount] = useState(null)
+
+  const canStart = selectedLevel && selectedCount
+  const selectedLevelOpt = levelOptions.find(o => o.id === selectedLevel)
+  const totalDays = canStart ? Math.ceil(parseInt(selectedLevelOpt.desc) / selectedCount) : 0
+
+  return (
+    <div className="p-4">
+      <div className="bg-sky-50 rounded-2xl p-4 mb-4">
+        <div className="flex items-center gap-2 mb-1">
+          <GraduationCap size={20} className="text-sky-500" />
+          <h2 className="text-lg font-bold text-sky-700">学习计划</h2>
+        </div>
+        <p className="text-sm text-sky-600">选择词库范围和每日学习量，系统会自动分配每天的学习任务</p>
+      </div>
+
+      <div className="mb-4">
+        <div className="text-sm font-semibold text-gray-700 mb-2">选择词库</div>
+        <div className="grid grid-cols-3 gap-2">
+          {levelOptions.map(opt => (
+            <button
+              key={opt.id}
+              onClick={() => setSelectedLevel(opt.id)}
+              className={`p-3 rounded-xl border-2 text-center transition ${selectedLevel === opt.id ? 'border-sky-500 bg-sky-50' : opt.color}`}
+            >
+              <div className="font-semibold text-gray-900 text-sm">{opt.label}</div>
+              <div className="text-xs text-gray-400 mt-0.5">{opt.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <div className="text-sm font-semibold text-gray-700 mb-2">每日单词数</div>
+        <div className="grid grid-cols-3 gap-2">
+          {countOptions.map(c => (
+            <button
+              key={c}
+              onClick={() => setSelectedCount(c)}
+              className={`p-3 rounded-xl border-2 text-center transition ${selectedCount === c ? 'border-sky-500 bg-sky-50' : 'border-gray-200 bg-white'}`}
+            >
+              <div className="font-semibold text-gray-900 text-sm">{c} 个/天</div>
+              <div className="text-xs text-gray-400 mt-0.5">{c <= 10 ? '轻松' : c <= 20 ? '适中' : '挑战'}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {canStart && (
+        <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">预计学习周期</span>
+            <span className="font-bold text-sky-500">{totalDays} 天</span>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={() => onStart(selectedLevel, selectedCount)}
+        disabled={!canStart}
+        className={`w-full py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 ${canStart ? 'bg-sky-500 text-white hover:bg-sky-600' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+      >
+        <Play size={18} />
+        开始学习
+      </button>
     </div>
   )
 }
