@@ -75,6 +75,40 @@ function App() {
     initTTS()
   }, [])
 
+  // Android 返回键处理：左滑/返回键 → 返回上级而非退出 App
+  useEffect(() => {
+    window.onAndroidBack = () => {
+      // 优先级1: 关闭单词详情
+      if (selectedWord) {
+        setSelectedWord(null)
+        setStudyContext(null)
+        return true
+      }
+      // 优先级2: 关闭搜索
+      if (showSearch) {
+        setShowSearch(false)
+        setSearchQuery('')
+        return true
+      }
+      // 优先级3: 关闭覆盖率报告弹窗
+      const modal = document.querySelector('[data-modal="coverage"]')
+      if (modal) {
+        // 触发关闭
+        const closeBtn = modal.querySelector('button')
+        if (closeBtn) closeBtn.click()
+        return true
+      }
+      // 优先级4: 如果不在首页，返回首页
+      if (currentView !== 'home') {
+        setCurrentView('home')
+        return true
+      }
+      // 首页时退出 App
+      return false
+    }
+    return () => { window.onAndroidBack = null }
+  }, [selectedWord, showSearch, currentView])
+
   useEffect(() => {
     const words = Object.entries(wordData).map(([word, data]) => ({ word, ...data }))
     setWordsList(words)
