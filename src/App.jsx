@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2 } from 'lucide-react'
+import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2, BarChart3, CheckCircle, XCircle, Info } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
 import { registerPlugin } from '@capacitor/core'
@@ -340,15 +340,150 @@ function FavoritesView({ favorites, wordsList, onOpenWord, isFavorite, onToggleF
   )
 }
 
+function CoverageReport({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center" onClick={onClose}>
+      <div className="bg-white w-full max-w-md max-h-[85vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900">词汇覆盖率报告</h2>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100"><X size={20} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* 总词数 */}
+          <div className="bg-sky-50 rounded-xl p-4 text-center">
+            <div className="text-sm text-sky-600">词库总量</div>
+            <div className="text-3xl font-bold text-sky-500">7,954</div>
+            <div className="text-xs text-sky-400 mt-1">远超四六级要求</div>
+          </div>
+
+          {/* 四六级覆盖率 */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+              <BarChart3 size={18} className="text-sky-500" />
+              四六级覆盖率
+            </h3>
+
+            <div className="bg-white rounded-xl border border-gray-100 p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-700">CET-4</span>
+                <span className="text-sm font-bold text-green-500">99.96%</span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="bg-green-500 h-2 rounded-full" style={{width: '99.96%'}}></div>
+              </div>
+              <div className="text-xs text-gray-400 mt-1">4,541 / 4,543 词</div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-100 p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-700">CET-6</span>
+                <span className="text-sm font-bold text-green-500">99.95%</span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="bg-green-500 h-2 rounded-full" style={{width: '99.95%'}}></div>
+              </div>
+              <div className="text-xs text-gray-400 mt-1">3,989 / 3,991 词</div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-100 p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-700">CET-4 + CET-6 合并</span>
+                <span className="text-sm font-bold text-green-500">99.94%</span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="bg-green-500 h-2 rounded-full" style={{width: '99.94%'}}></div>
+              </div>
+              <div className="text-xs text-gray-400 mt-1">6,657 / 6,661 词</div>
+            </div>
+          </div>
+
+          {/* 未覆盖词汇 */}
+          <div className="space-y-2">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+              <XCircle size={18} className="text-orange-500" />
+              未覆盖词汇（仅 4 个）
+            </h3>
+            <div className="bg-orange-50 rounded-xl p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <span className="text-xs bg-orange-200 text-orange-700 px-1.5 py-0.5 rounded">CET-4</span>
+                <div className="text-sm">
+                  <span className="font-mono font-medium">administrative</span>
+                  <span className="text-gray-500"> — 行政的</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-xs bg-orange-200 text-orange-700 px-1.5 py-0.5 rounded">CET-4</span>
+                <div className="text-sm">
+                  <span className="font-mono font-medium">negro</span>
+                  <span className="text-gray-500"> — 黑人（现代英语已少用）</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-xs bg-blue-200 text-blue-700 px-1.5 py-0.5 rounded">CET-6</span>
+                <div className="text-sm">
+                  <span className="font-mono font-medium">abbreviation</span>
+                  <span className="text-gray-500"> — 缩写</span>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="text-xs bg-blue-200 text-blue-700 px-1.5 py-0.5 rounded">CET-6</span>
+                <div className="text-sm">
+                  <span className="font-mono font-medium">countermeasure</span>
+                  <span className="text-gray-500"> — 对策、反制措施</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 超出四六级的词汇 */}
+          <div className="space-y-2">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+              <CheckCircle size={18} className="text-sky-500" />
+              超出四六级范围
+            </h3>
+            <div className="bg-sky-50 rounded-xl p-3">
+              <div className="text-sm text-sky-700">
+                本词库包含 <span className="font-bold">1,297</span> 个超出 CET-4/6 范围的词汇，涵盖高级学术词汇、专有名词、GRE/托福词汇等，适合进阶学习。
+              </div>
+            </div>
+          </div>
+
+          {/* 数据来源 */}
+          <div className="flex items-start gap-2 text-xs text-gray-400 bg-gray-50 rounded-xl p-3">
+            <Info size={14} className="mt-0.5 shrink-0" />
+            <div>
+              数据来源：github.com/Ceelog/DictionaryByGPT4（GPT-4 生成解析）<br/>
+              四六级词表：github.com/KyleBing/english-vocabulary
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavorites }) {
+  const [showCoverage, setShowCoverage] = useState(false)
+
   return (
     <div className="p-4">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
-          <div className="text-sm text-gray-500">词库总量</div>
-          <div className="text-2xl font-bold text-sky-500">{totalWords.toLocaleString()}</div>
-        </div>
-        <div className="p-4 border-b border-gray-100">
+        <button
+          onClick={() => setShowCoverage(true)}
+          className="w-full p-4 border-b border-gray-100 hover:bg-gray-50 transition text-left"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-500">词库总量</div>
+              <div className="text-2xl font-bold text-sky-500">{totalWords.toLocaleString()}</div>
+            </div>
+            <div className="flex items-center gap-1 text-sky-500 text-sm">
+              <BarChart3 size={16} />
+              <span>查看覆盖率</span>
+            </div>
+          </div>
+        </button>
+        <div className="p-4">
           <div className="text-sm text-gray-500">已收藏</div>
           <div className="text-2xl font-bold text-sky-500">{favoritesCount}</div>
         </div>
@@ -374,6 +509,8 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
         <p className="mt-1">新增音标显示 + TTS 发音</p>
         <p className="mt-1">数据来源: github.com/Ceelog/DictionaryByGPT4</p>
       </div>
+
+      {showCoverage && <CoverageReport onClose={() => setShowCoverage(false)} />}
     </div>
   )
 }
