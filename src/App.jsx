@@ -4,9 +4,32 @@ import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
 import { registerPlugin } from '@capacitor/core'
 import wordData from './data/words.json'
+import wordLevels from './data/word-levels.json'
 
 // 注册自定义原生 TTS 插件
 const NativeTTS = registerPlugin('NativeTTS')
+
+// 单词级别标签配置
+const LEVEL_CONFIG = {
+  'cet4':   { label: '四级', color: 'bg-green-100 text-green-700' },
+  'cet6':   { label: '六级', color: 'bg-blue-100 text-blue-700' },
+  'cet4+6': { label: '四六级', color: 'bg-purple-100 text-purple-700' },
+  'beyond': { label: '超纲', color: 'bg-gray-100 text-gray-500' },
+}
+
+function getWordLevel(word) {
+  return wordLevels[word.toLowerCase()] || 'beyond'
+}
+
+function LevelTag({ word }) {
+  const level = getWordLevel(word)
+  const config = LEVEL_CONFIG[level]
+  return (
+    <span className={`text-xs px-1.5 py-0.5 rounded ${config.color} font-medium`}>
+      {config.label}
+    </span>
+  )
+}
 
 const SECTIONS = [
   { id: 'home', label: '单词本', icon: BookOpen },
@@ -292,7 +315,10 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
             >
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-gray-900">{item.word}</span>
-                {isFavorite(item.word) && <Star size={14} className="text-yellow-400 fill-yellow-400" />}
+                <div className="flex items-center gap-1">
+                  <LevelTag word={item.word} />
+                  {isFavorite(item.word) && <Star size={14} className="text-yellow-400 fill-yellow-400" />}
+                </div>
               </div>
               <div className="text-xs text-gray-400 mt-1 line-clamp-1">
                 {item.content?.substring(0, 40).replace(/[#*\n]/g, '')}...
@@ -325,7 +351,10 @@ function FavoritesView({ favorites, wordsList, onOpenWord, isFavorite, onToggleF
         {favWords.map(item => (
           <div key={item.word} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center justify-between">
             <button onClick={() => onOpenWord(item)} className="flex-1 text-left">
-              <div className="font-semibold text-gray-900">{item.word}</div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-900">{item.word}</span>
+                <LevelTag word={item.word} />
+              </div>
               <div className="text-xs text-gray-400 mt-1 line-clamp-1">
                 {item.content?.substring(0, 60).replace(/[#*\n]/g, '')}...
               </div>
@@ -593,6 +622,7 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3 mb-2">
             <div className="text-3xl font-bold text-gray-900">{wordData.word}</div>
+            <LevelTag word={wordData.word} />
             <button
               onClick={speak}
               className={`p-2 rounded-full transition ${speaking ? 'bg-sky-500 text-white animate-pulse' : 'bg-sky-50 text-sky-500 hover:bg-sky-100'}`}
