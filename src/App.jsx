@@ -55,6 +55,7 @@ function App() {
   const [wordsList, setWordsList] = useState([])
   const [ttsReady, setTtsReady] = useState(false)
   const [studyView, setStudyView] = useState('plan') // 'plan' or 'daily'
+  const [studyContext, setStudyContext] = useState(null) // { words: [], currentIndex: number }
 
   // App 启动时初始化 TTS 引擎
   useEffect(() => {
@@ -131,13 +132,24 @@ function App() {
   }
 
   if (selectedWord) {
+    const goToWord = (idx) => {
+      if (studyContext && studyContext.words[idx]) {
+        const word = studyContext.words[idx]
+        setSelectedWord(word)
+        addToHistory(word.word)
+        setStudyContext(prev => ({ ...prev, currentIndex: idx }))
+      }
+    }
+
     return (
       <WordDetail
         wordData={selectedWord}
-        onBack={() => setSelectedWord(null)}
+        onBack={() => { setSelectedWord(null); setStudyContext(null) }}
         isFavorite={isFavorite(selectedWord.word)}
         onToggleFavorite={() => toggleFavorite(selectedWord.word)}
         ttsReady={ttsReady}
+        onPrev={studyContext && studyContext.currentIndex > 0 ? () => goToWord(studyContext.currentIndex - 1) : undefined}
+        onNext={studyContext && studyContext.currentIndex < studyContext.words.length - 1 ? () => goToWord(studyContext.currentIndex + 1) : undefined}
       />
     )
   }
@@ -223,7 +235,7 @@ function App() {
           <HomeView dailyWord={dailyWord} onOpenWord={openWord} wordsList={wordsList} isFavorite={isFavorite} />
         )}
         {currentView === 'study' && (
-          <StudyView wordsList={wordsList} studyView={studyView} setStudyView={setStudyView} onOpenWord={openWord} />
+          <StudyView wordsList={wordsList} studyView={studyView} setStudyView={setStudyView} onOpenWord={openWord} setStudyContext={setStudyContext} />
         )}
         {currentView === 'favorites' && (
           <FavoritesView favorites={favorites} wordsList={wordsList} onOpenWord={openWord} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
@@ -337,7 +349,7 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
 }
 
 // 学习模式组件
-function StudyView({ wordsList, studyView, setStudyView, onOpenWord }) {
+function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyContext }) {
   const STORAGE_KEY = 'gptwordbook_study_plan'
 
   const [plan, setPlan] = useState(() => {
@@ -410,7 +422,18 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord }) {
     setDailyWords(todayWords)
   }, [plan, studyView, wordsList])
 
-  // 标记单词已掌握
+  // 标记单词已学（点开即标记）
+  const markAsStudied = (word) => {
+    if (!masteredWords[word]) {
+      setMasteredWords(prev => {
+        const next = { ...prev, [word]: true }
+        localStorage.setItem('gptwordbook_mastered', JSON.stringify(next))
+        return next
+      })
+    }
+  }
+
+  // 标记单词已掌握/取消（手动点击）
   const toggleMastered = (word) => {
     setMasteredWords(prev => {
       const next = { ...prev, [word]: !prev[word] }
@@ -488,7 +511,7 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord }) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-xs text-gray-400 w-6">{idx + 1}</span>
-                    <button onClick={() => onOpenWord(item)} className="font-semibold text-gray-900 truncate">
+                    <button onClick={() => { markAsStudied(item.word); setStudyContext({ words: dailyWords, currentIndex: idx }); onOpenWord(item) }} className="font-semibold text-gray-900 truncate">
                       {item.word}
                     </button>
                     <LevelTag word={item.word} />
@@ -819,9 +842,46 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
 // 发音音频缓存（同一个单词只请求一次有道 API）
 const audioCache = {}
 
-function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }) {
+function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady, onPrev, onNext }) {
   const [speaking, setSpeaking] = useState(false)
   const audioRef = useRef(null)
+  const touchStartX = useRef(null)
+  const touchStartY = useRef(null)
+  const touchDeltaX = useRef(0)
+  const [swiping, setSwiping] = useState(false)
+
+  // 触摸手势处理
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+    touchDeltaX.current = 0
+    setSwiping(false)
+  }
+
+  const handleTouchMove = (e) => {
+    if (touchStartX.current === null) return
+    const deltaX = e.touches[0].clientX - touchStartX.current
+    const deltaY = Math.abs(e.touches[0].clientY - touchStartY.current)
+    // 只在水平滑动大于垂直滑动时触发
+    if (Math.abs(deltaX) > deltaY && Math.abs(deltaX) > 20) {
+      setSwiping(true)
+      touchDeltaX.current = deltaX
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null) return
+    const threshold = 80
+    if (touchDeltaX.current < -threshold && onNext) {
+      onNext()
+    } else if (touchDeltaX.current > threshold && onPrev) {
+      onPrev()
+    }
+    touchStartX.current = null
+    touchStartY.current = null
+    touchDeltaX.current = 0
+    setSwiping(false)
+  }
 
   const speak = () => {
     if (speaking) return
@@ -877,7 +937,13 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }
   }, [])
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div
+      className="h-screen flex flex-col bg-gray-50"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ touchAction: 'pan-y' }}
+    >
       <header className="bg-sky-500 text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="px-4 py-3 flex items-center justify-between">
           <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-sky-400 transition">
@@ -890,7 +956,7 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4" style={{ touchAction: 'pan-y' }}>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3 mb-2">
             <div className="text-3xl font-bold text-gray-900">{wordData.word}</div>
@@ -911,6 +977,12 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady }
           <div className="markdown-content text-sm">
             <ReactMarkdown>{wordData.content || ''}</ReactMarkdown>
           </div>
+        </div>
+
+        {/* 滑动提示 */}
+        <div className="flex items-center justify-center gap-4 mt-3 text-xs text-gray-300">
+          {onPrev && <span>&lt; 左滑返回</span>}
+          {onNext && <span>右滑下一个 &gt;</span>}
         </div>
       </div>
     </div>
