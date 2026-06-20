@@ -307,7 +307,7 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
 
   const filteredWords = letterFilter
     ? wordsList.filter(w => w.word.toUpperCase().startsWith(letterFilter))
-    : wordsList.slice(0, 100)
+    : wordsList
 
   return (
     <div className="pb-4">
@@ -358,7 +358,7 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
           {letterFilter ? `以 "${letterFilter}" 开头的单词` : '热门单词'}
         </div>
         <div className="grid grid-cols-2 gap-2">
-          {filteredWords.slice(0, 60).map(item => (
+          {filteredWords.map(item => (
             <button
               key={item.word}
               onClick={() => onOpenWord(item)}
