@@ -135,12 +135,21 @@ function App() {
 
   // 提交激活码
   const submitActivation = async () => {
-    if (!activateCode.trim() || !deviceId) return
+    const code = activateCode.trim().toUpperCase()
+    if (!code || !deviceId) return
+
+    // 本地格式校验：GPT-2026-XXXX-XXXX
+    const formatCheck = /^GPT-\d{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/
+    if (!formatCheck.test(code)) {
+      setActivateError('激活码格式不正确，示例：GPT-2026-ABCD-1234')
+      return
+    }
+
     setActivateLoading(true)
     setActivateError('')
     try {
       // 1. 验证激活码是否存在且有效
-      const codeRes = await fetch(`${SUPABASE_URL}/rest/v1/activation_codes?code=eq.${encodeURIComponent(activateCode.trim())}&is_active=eq.true&select=*`, {
+      const codeRes = await fetch(`${SUPABASE_URL}/rest/v1/activation_codes?code=eq.${encodeURIComponent(code)}&is_active=eq.true&select=*`, {
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
       })
       const codes = await codeRes.json()
@@ -158,7 +167,7 @@ function App() {
           'Content-Type': 'application/json',
           'Prefer': 'return=minimal'
         },
-        body: JSON.stringify({ device_id: deviceId, code: activateCode.trim() })
+        body: JSON.stringify({ device_id: deviceId, code })
       })
       if (insertRes.ok || insertRes.status === 409) {
         setIsActivated(true)
