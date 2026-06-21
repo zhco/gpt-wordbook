@@ -1030,23 +1030,26 @@ function CoverageReport({ onClose }) {
 function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavorites, isActivated, onOpenActivate }) {
   const [showCoverage, setShowCoverage] = useState(false)
 
-  const exportData = () => {
-    const data = {
-      favorites: localStorage.getItem('gptwordbook_favorites') || '[]',
-      history: localStorage.getItem('gptwordbook_history') || '[]',
-      mastered: localStorage.getItem('gptwordbook_mastered') || '{}',
-      plan: localStorage.getItem('gptwordbook_study_plan') || 'null',
-      exportedAt: new Date().toISOString(),
+  const exportData = async () => {
+    try {
+      const data = {
+        favorites: localStorage.getItem('gptwordbook_favorites') || '[]',
+        history: localStorage.getItem('gptwordbook_history') || '[]',
+        mastered: localStorage.getItem('gptwordbook_mastered') || '{}',
+        plan: localStorage.getItem('gptwordbook_study_plan') || 'null',
+        exportedAt: new Date().toISOString(),
+      }
+      const fileName = `gpt-wordbook-backup-${new Date().toISOString().split('T')[0]}.json`
+      await Filesystem.writeFile({
+        path: fileName,
+        data: JSON.stringify(data, null, 2),
+        directory: Directory.Documents,
+        encoding: Encoding.UTF8,
+      })
+      alert(`学习记录已导出到 Documents/${fileName}`)
+    } catch (e) {
+      alert('导出失败：' + (e.message || '未知错误'))
     }
-    const json = JSON.stringify(data)
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `gpt-wordbook-backup-${new Date().toISOString().split('T')[0]}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-    alert('学习记录已导出')
   }
 
   const importData = () => {
