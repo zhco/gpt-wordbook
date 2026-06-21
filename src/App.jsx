@@ -56,6 +56,19 @@ function App() {
   const [ttsReady, setTtsReady] = useState(false)
   const [studyView, setStudyView] = useState('plan') // 'plan' or 'daily'
   const [studyContext, setStudyContext] = useState(null) // { words: [], currentIndex: number }
+  const [masteredWords, setMasteredWords] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('gptwordbook_mastered') || '{}') } catch { return {} }
+  })
+
+  // 标记单词已学
+  const markAsStudied = useCallback((word) => {
+    setMasteredWords(prev => {
+      if (prev[word]) return prev
+      const next = { ...prev, [word]: true }
+      localStorage.setItem('gptwordbook_mastered', JSON.stringify(next))
+      return next
+    })
+  }, [])
 
   // App 启动时初始化 TTS 引擎
   useEffect(() => {
@@ -155,7 +168,11 @@ function App() {
   const openWord = useCallback((wordObj) => {
     setSelectedWord(wordObj)
     addToHistory(wordObj.word)
-  }, [addToHistory])
+    // 学习模式下自动标记已学
+    if (studyContext) {
+      markAsStudied(wordObj.word)
+    }
+  }, [addToHistory, studyContext, markAsStudied])
 
   const isFavorite = (word) => favorites.includes(word)
 
@@ -172,6 +189,7 @@ function App() {
         setSelectedWord(word)
         addToHistory(word.word)
         setStudyContext(prev => ({ ...prev, currentIndex: idx }))
+        markAsStudied(word.word)
       }
     }
 
@@ -269,7 +287,7 @@ function App() {
           <HomeView dailyWord={dailyWord} onOpenWord={openWord} wordsList={wordsList} isFavorite={isFavorite} />
         )}
         {currentView === 'study' && (
-          <StudyView wordsList={wordsList} studyView={studyView} setStudyView={setStudyView} onOpenWord={openWord} setStudyContext={setStudyContext} />
+          <StudyView wordsList={wordsList} studyView={studyView} setStudyView={setStudyView} onOpenWord={openWord} setStudyContext={setStudyContext} masteredWords={masteredWords} setMasteredWords={setMasteredWords} />
         )}
         {currentView === 'favorites' && (
           <FavoritesView favorites={favorites} wordsList={wordsList} onOpenWord={openWord} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
@@ -383,7 +401,7 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
 }
 
 // 学习模式组件
-function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyContext }) {
+function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyContext, masteredWords, setMasteredWords }) {
   const STORAGE_KEY = 'gptwordbook_study_plan'
 
   const [plan, setPlan] = useState(() => {
@@ -400,9 +418,6 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
     }
   }, [plan])
   const [dailyWords, setDailyWords] = useState([])
-  const [masteredWords, setMasteredWords] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('gptwordbook_mastered') || '{}') } catch { return {} }
-  })
 
   // 获取指定级别的所有单词
   const getWordsByLevel = (level) => {
@@ -455,17 +470,6 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
     const todayWords = shuffled.slice(startIdx, startIdx + plan.dailyCount)
     setDailyWords(todayWords)
   }, [plan, studyView, wordsList])
-
-  // 标记单词已学（点开即标记）
-  const markAsStudied = (word) => {
-    if (!masteredWords[word]) {
-      setMasteredWords(prev => {
-        const next = { ...prev, [word]: true }
-        localStorage.setItem('gptwordbook_mastered', JSON.stringify(next))
-        return next
-      })
-    }
-  }
 
   // 标记单词已掌握/取消（手动点击）
   const toggleMastered = (word) => {
@@ -545,7 +549,7 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-xs text-gray-400 w-6">{idx + 1}</span>
-                    <button onClick={() => { markAsStudied(item.word); setStudyContext({ words: dailyWords, currentIndex: idx }); onOpenWord(item) }} className="font-semibold text-gray-900 truncate">
+                    <button onClick={() => { setStudyContext({ words: dailyWords, currentIndex: idx }); onOpenWord(item) }} className="font-semibold text-gray-900 truncate">
                       {item.word}
                     </button>
                     <LevelTag word={item.word} />
