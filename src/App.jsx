@@ -5,11 +5,16 @@ import Fuse from 'fuse.js'
 import { registerPlugin } from '@capacitor/core'
 import { App as CapApp } from '@capacitor/app'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
+import { Device } from '@capacitor/device'
 import wordData from './data/words.json'
 import wordLevels from './data/word-levels.json'
 
 // 注册自定义原生 TTS 插件
 const NativeTTS = registerPlugin('NativeTTS')
+
+// Supabase 配置
+const SUPABASE_URL = 'https://fedlhohopipeyrmdctfr.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZGxob2hvcGlwZXlybWRjdGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNTMxMTgsImV4cCI6MjA5NTgyOTExOH0.aQ5h9c11gObhvvCJpehPwRk7tn_7vfjtPMuJz7oXMDI'
 
 // 单词级别标签配置
 const LEVEL_CONFIG = {
@@ -61,6 +66,15 @@ function App() {
   const [masteredWords, setMasteredWords] = useState(() => {
     try { return JSON.parse(localStorage.getItem('gptwordbook_mastered') || '{}') } catch { return {} }
   })
+  // 激活授权状态
+  const [isActivated, setIsActivated] = useState(() => {
+    try { return localStorage.getItem('gptwordbook_activated') === 'true' } catch { return false }
+  })
+  const [showActivateModal, setShowActivateModal] = useState(false)
+  const [activateCode, setActivateCode] = useState('')
+  const [activateError, setActivateError] = useState('')
+  const [activateLoading, setActivateLoading] = useState(false)
+  const [deviceId, setDeviceId] = useState('')
 
   // 标记单词已学
   const markAsStudied = useCallback((word) => {
@@ -72,23 +86,93 @@ function App() {
     })
   }, [])
 
-  // App 启动时初始化 TTS 引擎
+  // App 启动时初始化 TTS 引擎 + 获取设备 ID + 检查激活状态
   useEffect(() => {
-    const initTTS = async () => {
+    const initApp = async () => {
       try {
+        // 获取设备 ID
+        const info = await Device.getId()
+        setDeviceId(info.identifier)
+        // 检查该设备是否已激活
+        if (!isActivated && info.identifier) {
+          checkDeviceActivated(info.identifier)
+        }
         // 等待插件加载
         await new Promise(r => setTimeout(r, 1000))
         const result = await NativeTTS.isAvailable()
         setTtsReady(result.available)
-        if (!result.available) {
-          console.warn('TTS not available on this device')
-        }
       } catch (e) {
-        console.warn('TTS init error:', e)
+        console.warn('Init error:', e)
       }
     }
-    initTTS()
+    initApp()
   }, [])
+
+  // 3 分钟后未激活则弹出激活窗口
+  useEffect(() => {
+    if (isActivated) return
+    const timer = setTimeout(() => {
+      setShowActivateModal(true)
+    }, 3 * 60 * 1000) // 3 分钟
+    return () => clearTimeout(timer)
+  }, [isActivated])
+
+  // 检查设备是否已激活
+  const checkDeviceActivated = async (devId) => {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/device_activations?device_id=eq.${encodeURIComponent(devId)}&select=code`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      })
+      const data = await res.json()
+      if (data && data.length > 0) {
+        setIsActivated(true)
+        localStorage.setItem('gptwordbook_activated', 'true')
+      }
+    } catch (e) {
+      console.warn('Check activation error:', e)
+    }
+  }
+
+  // 提交激活码
+  const submitActivation = async () => {
+    if (!activateCode.trim() || !deviceId) return
+    setActivateLoading(true)
+    setActivateError('')
+    try {
+      // 1. 验证激活码是否存在且有效
+      const codeRes = await fetch(`${SUPABASE_URL}/rest/v1/activation_codes?code=eq.${encodeURIComponent(activateCode.trim())}&is_active=eq.true&select=*`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      })
+      const codes = await codeRes.json()
+      if (!codes || codes.length === 0) {
+        setActivateError('激活码无效或已被禁用')
+        setActivateLoading(false)
+        return
+      }
+      // 2. 记录设备激活
+      const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/device_activations`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ device_id: deviceId, code: activateCode.trim() })
+      })
+      if (insertRes.ok || insertRes.status === 409) {
+        setIsActivated(true)
+        localStorage.setItem('gptwordbook_activated', 'true')
+        setShowActivateModal(false)
+        setActivateCode('')
+      } else {
+        setActivateError('激活失败，请重试')
+      }
+    } catch (e) {
+      setActivateError('网络错误，请检查网络连接')
+    }
+    setActivateLoading(false)
+  }
 
   // App 进入后台时自动备份学习记录
   useEffect(() => {
@@ -245,10 +329,46 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
+      {/* 激活弹窗 */}
+      {showActivateModal && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="text-center mb-4">
+              <div className="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Star size={32} className="text-sky-500" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">激活授权</h2>
+              <p className="text-sm text-gray-500 mt-1">请输入激活码以继续使用全部功能</p>
+            </div>
+            <input
+              type="text"
+              placeholder="请输入激活码"
+              value={activateCode}
+              onChange={(e) => setActivateCode(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-center text-lg tracking-widest font-mono focus:border-sky-500 focus:outline-none"
+            />
+            {activateError && (
+              <p className="text-red-500 text-sm text-center mt-2">{activateError}</p>
+            )}
+            <button
+              onClick={submitActivation}
+              disabled={activateLoading || !activateCode.trim()}
+              className={`w-full py-3 rounded-xl font-semibold mt-4 transition ${activateLoading || !activateCode.trim() ? 'bg-gray-200 text-gray-400' : 'bg-sky-500 text-white hover:bg-sky-600'}`}
+            >
+              {activateLoading ? '验证中...' : '立即激活'}
+            </button>
+            <p className="text-xs text-gray-400 text-center mt-3">设备 ID: {deviceId.slice(0, 16)}...</p>
+          </div>
+        </div>
+      )}
+
       <header className="bg-sky-500 text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-bold">GPT 单词本</h1>
           <div className="flex items-center gap-2">
+            {!isActivated && (
+              <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-medium">未激活</span>
+            )}
             <button onClick={() => setShowSearch(true)} className="p-2 rounded-full hover:bg-sky-400 transition">
               <Search size={20} />
             </button>
@@ -330,7 +450,7 @@ function App() {
           <FavoritesView favorites={favorites} wordsList={wordsList} onOpenWord={openWord} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
         )}
         {currentView === 'settings' && (
-          <SettingsView totalWords={wordsList.length} favoritesCount={favorites.length} onClearHistory={() => setHistory([])} onClearFavorites={() => setFavorites([])} />
+          <SettingsView totalWords={wordsList.length} favoritesCount={favorites.length} onClearHistory={() => setHistory([])} onClearFavorites={() => setFavorites([])} isActivated={isActivated} onOpenActivate={() => setShowActivateModal(true)} />
         )}
       </main>
 
@@ -877,7 +997,7 @@ function CoverageReport({ onClose }) {
   )
 }
 
-function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavorites }) {
+function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavorites, isActivated, onOpenActivate }) {
   const [showCoverage, setShowCoverage] = useState(false)
 
   const exportData = () => {
@@ -949,6 +1069,13 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
       </div>
 
       <div className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <button
+          onClick={onOpenActivate}
+          className={`w-full p-4 text-left border-b border-gray-100 hover:bg-gray-50 transition flex items-center justify-between ${isActivated ? 'text-green-600' : 'text-yellow-600'}`}
+        >
+          <span>激活授权</span>
+          <span className="text-sm font-medium">{isActivated ? '已激活' : '未激活'}</span>
+        </button>
         <button
           onClick={exportData}
           className="w-full p-4 text-left text-sky-600 border-b border-gray-100 hover:bg-gray-50 transition"
