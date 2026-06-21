@@ -287,7 +287,7 @@ function App() {
           <HomeView dailyWord={dailyWord} onOpenWord={openWord} wordsList={wordsList} isFavorite={isFavorite} />
         )}
         {currentView === 'study' && (
-          <StudyView wordsList={wordsList} studyView={studyView} setStudyView={setStudyView} onOpenWord={openWord} setStudyContext={setStudyContext} masteredWords={masteredWords} setMasteredWords={setMasteredWords} />
+          <StudyView wordsList={wordsList} studyView={studyView} setStudyView={setStudyView} onOpenWord={openWord} setStudyContext={setStudyContext} masteredWords={masteredWords} setMasteredWords={setMasteredWords} markAsStudied={markAsStudied} />
         )}
         {currentView === 'favorites' && (
           <FavoritesView favorites={favorites} wordsList={wordsList} onOpenWord={openWord} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
@@ -401,7 +401,7 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
 }
 
 // 学习模式组件
-function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyContext, masteredWords, setMasteredWords }) {
+function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyContext, masteredWords, setMasteredWords, markAsStudied }) {
   const STORAGE_KEY = 'gptwordbook_study_plan'
 
   const [plan, setPlan] = useState(() => {
@@ -549,7 +549,7 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-xs text-gray-400 w-6">{idx + 1}</span>
-                    <button onClick={() => { setStudyContext({ words: dailyWords, currentIndex: idx }); onOpenWord(item) }} className="font-semibold text-gray-900 truncate">
+                    <button onClick={() => { markAsStudied(item.word); setStudyContext({ words: dailyWords, currentIndex: idx }); onOpenWord(item) }} className="font-semibold text-gray-900 truncate">
                       {item.word}
                     </button>
                     <LevelTag word={item.word} />
