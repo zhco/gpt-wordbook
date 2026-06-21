@@ -3,7 +3,7 @@ import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volum
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
 import { registerPlugin } from '@capacitor/core'
-import { App } from '@capacitor/app'
+import { App as CapApp } from '@capacitor/app'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
 import wordData from './data/words.json'
 import wordLevels from './data/word-levels.json'
@@ -113,7 +113,7 @@ function App() {
       }
     }
 
-    const listener = App.addListener('appStateChange', ({ isActive }) => {
+    const listener = CapApp.addListener('appStateChange', ({ isActive }) => {
       if (!isActive) {
         // App 进入后台，自动备份
         autoBackup()
