@@ -342,31 +342,52 @@ function App() {
       {showActivateModal && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <div className="text-center mb-4">
-              <div className="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Star size={32} className="text-sky-500" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">激活授权</h2>
-              <p className="text-sm text-gray-500 mt-1">请输入激活码以继续使用全部功能</p>
-            </div>
-            <input
-              type="text"
-              placeholder="请输入激活码"
-              value={activateCode}
-              onChange={(e) => setActivateCode(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-center text-lg tracking-widest font-mono focus:border-sky-500 focus:outline-none"
-            />
-            {activateError && (
-              <p className="text-red-500 text-sm text-center mt-2">{activateError}</p>
+            {isActivated ? (
+              <>
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle size={32} className="text-green-500" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">已激活</h2>
+                  <p className="text-sm text-gray-500 mt-1">此设备已成功激活，可使用全部功能</p>
+                </div>
+                <p className="text-xs text-gray-400 text-center mt-2">设备 ID: {deviceId.slice(0, 16)}...</p>
+                <button
+                  onClick={() => setShowActivateModal(false)}
+                  className="w-full py-3 rounded-xl font-semibold mt-4 bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+                >
+                  关闭
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Star size={32} className="text-sky-500" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">激活授权</h2>
+                  <p className="text-sm text-gray-500 mt-1">请输入激活码以继续使用全部功能</p>
+                </div>
+                <input
+                  type="text"
+                  placeholder="请输入激活码"
+                  value={activateCode}
+                  onChange={(e) => setActivateCode(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-center text-lg tracking-widest font-mono focus:border-sky-500 focus:outline-none"
+                />
+                {activateError && (
+                  <p className="text-red-500 text-sm text-center mt-2">{activateError}</p>
+                )}
+                <button
+                  onClick={submitActivation}
+                  disabled={activateLoading || !activateCode.trim()}
+                  className={`w-full py-3 rounded-xl font-semibold mt-4 transition ${activateLoading || !activateCode.trim() ? 'bg-gray-200 text-gray-400' : 'bg-sky-500 text-white hover:bg-sky-600'}`}
+                >
+                  {activateLoading ? '验证中...' : '立即激活'}
+                </button>
+                <p className="text-xs text-gray-400 text-center mt-3">设备 ID: {deviceId.slice(0, 16)}...</p>
+              </>
             )}
-            <button
-              onClick={submitActivation}
-              disabled={activateLoading || !activateCode.trim()}
-              className={`w-full py-3 rounded-xl font-semibold mt-4 transition ${activateLoading || !activateCode.trim() ? 'bg-gray-200 text-gray-400' : 'bg-sky-500 text-white hover:bg-sky-600'}`}
-            >
-              {activateLoading ? '验证中...' : '立即激活'}
-            </button>
-            <p className="text-xs text-gray-400 text-center mt-3">设备 ID: {deviceId.slice(0, 16)}...</p>
           </div>
         </div>
       )}
