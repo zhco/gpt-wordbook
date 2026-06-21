@@ -545,17 +545,19 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
           {dailyWords.map((item, idx) => {
             const isMastered = masteredWords[item.word]
             return (
-              <div key={item.word} className={`bg-white rounded-xl p-3 shadow-sm border transition ${isMastered ? 'border-green-200 bg-green-50/50' : 'border-gray-100'}`}>
+              <div
+                key={item.word}
+                onClick={() => { markAsStudied(item.word); setStudyContext({ words: dailyWords, currentIndex: idx }); onOpenWord(item) }}
+                className={`bg-white rounded-xl p-3 shadow-sm border transition cursor-pointer active:scale-[0.98] ${isMastered ? 'border-green-200 bg-green-50/50' : 'border-gray-100'}`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-xs text-gray-400 w-6">{idx + 1}</span>
-                    <button onClick={() => { markAsStudied(item.word); setStudyContext({ words: dailyWords, currentIndex: idx }); onOpenWord(item) }} className="font-semibold text-gray-900 truncate">
-                      {item.word}
-                    </button>
+                    <span className="font-semibold text-gray-900 truncate">{item.word}</span>
                     <LevelTag word={item.word} />
                   </div>
                   <button
-                    onClick={() => toggleMastered(item.word)}
+                    onClick={(e) => { e.stopPropagation(); toggleMastered(item.word) }}
                     className={`p-2 rounded-full transition shrink-0 ${isMastered ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`}
                   >
                     <Check size={16} />
