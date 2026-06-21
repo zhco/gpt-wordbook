@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2, BarChart3, CheckCircle, XCircle, Info, GraduationCap, Calendar, Play, Check, ChevronRight } from 'lucide-react'
+import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volume2, BarChart3, CheckCircle, XCircle, Info, GraduationCap, Calendar, Play, Check, ChevronRight, Upload, Download } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
 import { registerPlugin } from '@capacitor/core'
+import { App } from '@capacitor/app'
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
 import wordData from './data/words.json'
 import wordLevels from './data/word-levels.json'
 
@@ -86,6 +88,41 @@ function App() {
       }
     }
     initTTS()
+  }, [])
+
+  // App 进入后台时自动备份学习记录
+  useEffect(() => {
+    const autoBackup = async () => {
+      try {
+        const data = {
+          favorites: localStorage.getItem('gptwordbook_favorites') || '[]',
+          history: localStorage.getItem('gptwordbook_history') || '[]',
+          mastered: localStorage.getItem('gptwordbook_mastered') || '{}',
+          plan: localStorage.getItem('gptwordbook_study_plan') || 'null',
+          backupAt: new Date().toISOString(),
+        }
+        await Filesystem.writeFile({
+          path: 'gpt-wordbook-auto-backup.json',
+          data: JSON.stringify(data),
+          directory: Directory.Documents,
+          encoding: Encoding.UTF8,
+        })
+        console.log('Auto backup saved to Documents/gpt-wordbook-auto-backup.json')
+      } catch (e) {
+        console.warn('Auto backup failed:', e)
+      }
+    }
+
+    const listener = App.addListener('appStateChange', ({ isActive }) => {
+      if (!isActive) {
+        // App 进入后台，自动备份
+        autoBackup()
+      }
+    })
+
+    return () => {
+      listener.then(l => l.remove())
+    }
   }, [])
 
   // Android 返回键处理：左滑/返回键 → 返回上级而非退出 App

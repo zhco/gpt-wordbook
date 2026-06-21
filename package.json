@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@capacitor/android": "^5.7.8",
+    "@capacitor/app": "^5.0.8",
     "@capacitor/cli": "^5.7.8",
     "@capacitor/core": "^5.7.8",
+    "@capacitor/filesystem": "^5.2.2",
     "@capacitor/splash-screen": "^5.0.8",
     "fuse.js": "^7.4.2",
     "lucide-react": "^1.21.0",
