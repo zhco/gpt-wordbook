@@ -441,12 +441,17 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
     return arr
   }
 
-  // 创建学习计划
+  // 创建学习计划（预分配每日单词，确保不重复）
   const createPlan = (level, dailyCount) => {
     const words = getWordsByLevel(level)
     const seed = Date.now()
     const shuffled = seededShuffle(words, seed)
     const totalDays = Math.ceil(shuffled.length / dailyCount)
+    // 预分配每天的单词列表
+    const dailyWordLists = []
+    for (let i = 0; i < totalDays; i++) {
+      dailyWordLists.push(shuffled.slice(i * dailyCount, (i + 1) * dailyCount).map(w => w.word))
+    }
     const newPlan = {
       level,
       dailyCount,
@@ -455,6 +460,7 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
       seed,
       startDate: new Date().toISOString().split('T')[0],
       currentDay: 1,
+      dailyWordLists, // 预分配，确保不重复
     }
     setPlan(newPlan)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newPlan))
@@ -464,11 +470,19 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
   // 获取今日单词
   useEffect(() => {
     if (!plan || studyView !== 'daily') return
-    const words = getWordsByLevel(plan.level)
-    const shuffled = seededShuffle(words, plan.seed)
-    const startIdx = (plan.currentDay - 1) * plan.dailyCount
-    const todayWords = shuffled.slice(startIdx, startIdx + plan.dailyCount)
-    setDailyWords(todayWords)
+    if (plan.dailyWordLists) {
+      // 使用预分配的单词列表
+      const todayWordNames = plan.dailyWordLists[plan.currentDay - 1] || []
+      const todayWords = todayWordNames.map(name => wordsList.find(w => w.word === name)).filter(Boolean)
+      setDailyWords(todayWords)
+    } else {
+      // 兼容旧计划（没有预分配的情况）
+      const words = getWordsByLevel(plan.level)
+      const shuffled = seededShuffle(words, plan.seed)
+      const startIdx = (plan.currentDay - 1) * plan.dailyCount
+      const todayWords = shuffled.slice(startIdx, startIdx + plan.dailyCount)
+      setDailyWords(todayWords)
+    }
   }, [plan, studyView, wordsList])
 
   // 标记单词已掌握/取消（手动点击）
@@ -829,6 +843,50 @@ function CoverageReport({ onClose }) {
 function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavorites }) {
   const [showCoverage, setShowCoverage] = useState(false)
 
+  const exportData = () => {
+    const data = {
+      favorites: localStorage.getItem('gptwordbook_favorites') || '[]',
+      history: localStorage.getItem('gptwordbook_history') || '[]',
+      mastered: localStorage.getItem('gptwordbook_mastered') || '{}',
+      plan: localStorage.getItem('gptwordbook_study_plan') || 'null',
+      exportedAt: new Date().toISOString(),
+    }
+    const json = JSON.stringify(data)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `gpt-wordbook-backup-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    alert('学习记录已导出')
+  }
+
+  const importData = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json'
+    input.onchange = (e) => {
+      const file = e.target.files[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result)
+          if (data.favorites) localStorage.setItem('gptwordbook_favorites', data.favorites)
+          if (data.history) localStorage.setItem('gptwordbook_history', data.history)
+          if (data.mastered) localStorage.setItem('gptwordbook_mastered', data.mastered)
+          if (data.plan) localStorage.setItem('gptwordbook_study_plan', data.plan)
+          alert('学习记录已导入，请重启 App')
+        } catch (err) {
+          alert('导入失败：文件格式错误')
+        }
+      }
+      reader.readAsText(file)
+    }
+    input.click()
+  }
+
   return (
     <div className="p-4">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -854,6 +912,18 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
       </div>
 
       <div className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <button
+          onClick={exportData}
+          className="w-full p-4 text-left text-sky-600 border-b border-gray-100 hover:bg-gray-50 transition"
+        >
+          导出学习记录
+        </button>
+        <button
+          onClick={importData}
+          className="w-full p-4 text-left text-sky-600 border-b border-gray-100 hover:bg-gray-50 transition"
+        >
+          导入学习记录
+        </button>
         <button
           onClick={() => { if (confirm('确定要清空浏览历史吗？')) onClearHistory() }}
           className="w-full p-4 text-left text-red-500 border-b border-gray-100 hover:bg-gray-50 transition"
