@@ -312,24 +312,24 @@ function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-dark-bg">
       {/* 激活弹窗 */}
       {showActivateModal && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+          <div className="bg-white dark:bg-dark-card rounded-2xl p-6 w-full max-w-sm shadow-2xl">
             {isActivated ? (
               <>
                 <div className="text-center mb-4">
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <CheckCircle size={32} className="text-green-500" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">已激活</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">此设备已成功激活，可使用全部功能</p>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text">已激活</h2>
+                  <p className="text-sm text-gray-500 dark:text-dark-muted mt-1">此设备已成功激活，可使用全部功能</p>
                 </div>
                 <p className="text-xs text-gray-400 text-center mt-2">设备 ID: {deviceId.slice(0, 16)}...</p>
                 <button
                   onClick={() => setShowActivateModal(false)}
-                  className="w-full py-3 rounded-xl font-semibold mt-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                  className="w-full py-3 rounded-xl font-semibold mt-4 bg-gray-100 dark:bg-dark-hover text-gray-700 dark:text-dark-text hover:bg-gray-200 dark:hover:bg-dark-hover transition"
                 >
                   关闭
                 </button>
@@ -340,15 +340,15 @@ function App() {
                   <div className="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Star size={32} className="text-sky-500" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">激活授权</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">请输入激活码以继续使用全部功能</p>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text">激活授权</h2>
+                  <p className="text-sm text-gray-500 dark:text-dark-muted mt-1">请输入激活码以继续使用全部功能</p>
                 </div>
                 <input
                   type="text"
                   placeholder="请输入激活码"
                   value={activateCode}
                   onChange={(e) => setActivateCode(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-center text-lg tracking-widest font-mono focus:border-sky-500 focus:outline-none"
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-dark-border dark:bg-dark-hover dark:text-dark-text rounded-xl text-center text-lg tracking-widest font-mono focus:border-sky-500 focus:outline-none"
                 />
                 {activateError && (
                   <p className="text-red-500 text-sm text-center mt-2">{activateError}</p>
@@ -356,13 +356,13 @@ function App() {
                 <button
                   onClick={submitActivation}
                   disabled={activateLoading || !activateCode.trim()}
-                  className={`w-full py-3 rounded-xl font-semibold mt-4 transition ${activateLoading || !activateCode.trim() ? 'bg-gray-200 dark:bg-gray-600 text-gray-400' : 'bg-sky-500 dark:bg-gray-700 text-white hover:bg-sky-600'}`}
+                  className={`w-full py-3 rounded-xl font-semibold mt-4 transition ${activateLoading || !activateCode.trim() ? 'bg-gray-200 dark:bg-dark-hover text-gray-400' : 'bg-sky-500 dark:bg-dark-hover text-white hover:bg-sky-600'}`}
                 >
                   {activateLoading ? '验证中...' : '立即激活'}
                 </button>
                 <button
                   onClick={() => Browser.open({ url: 'https://zhco.github.io/danci_auth.html' })}
-                  className="w-full py-3 rounded-xl font-semibold mt-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                  className="w-full py-3 rounded-xl font-semibold mt-2 bg-gray-100 dark:bg-dark-hover text-gray-600 dark:text-dark-text hover:bg-gray-200 dark:hover:bg-dark-hover transition"
                 >
                   如何获取激活码
                 </button>
@@ -373,7 +373,7 @@ function App() {
         </div>
       )}
 
-      <header className="bg-sky-500 dark:bg-gray-800 text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <header className="bg-sky-500 dark:bg-dark-card text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-bold">GPT 单词本</h1>
           <div className="flex items-center gap-2">
@@ -391,7 +391,7 @@ function App() {
       </header>
 
       {showSearch && (
-        <div className="fixed inset-0 bg-white dark:bg-gray-800 z-50 flex flex-col">
+        <div className="fixed inset-0 bg-white dark:bg-dark-card z-50 flex flex-col">
           <div className="bg-sky-500 text-white px-4 py-3 flex items-center gap-3" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             <Search size={20} className="text-sky-200" />
             <input
@@ -400,7 +400,7 @@ function App() {
               placeholder="搜索单词..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent text-white dark:text-gray-200 placeholder-sky-200 outline-none text-base"
+              className="flex-1 bg-transparent text-white dark:text-dark-text placeholder-sky-200 outline-none text-base"
             />
             <button onClick={() => { setShowSearch(false); setSearchQuery('') }} className="p-1">
               <X size={20} />
@@ -436,7 +436,7 @@ function App() {
                             const wordObj = wordsList.find(item => item.word === w)
                             if (wordObj) { openWord(wordObj); setShowSearch(false) }
                           }}
-                          className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          className="px-3 py-1.5 bg-gray-100 dark:bg-dark-hover rounded-full text-sm text-gray-700 dark:text-dark-text hover:bg-gray-200 dark:hover:bg-dark-hover"
                         >
                           {w}
                         </button>
@@ -465,7 +465,7 @@ function App() {
         )}
       </main>
 
-      <nav className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <nav className="bg-white dark:bg-dark-card border-t border-gray-200 dark:border-dark-border" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="flex justify-around">
           {SECTIONS.map(section => {
             const Icon = section.icon
@@ -523,7 +523,7 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-2">
           <button
             onClick={() => setLetterFilter('')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition ${letterFilter === '' ? 'bg-sky-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition ${letterFilter === '' ? 'bg-sky-500 text-white' : 'bg-gray-100 dark:bg-dark-hover text-gray-600 dark:text-dark-text'}`}
           >
             全部
           </button>
@@ -531,7 +531,7 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
             <button
               key={l}
               onClick={() => setLetterFilter(l === letterFilter ? '' : l)}
-              className={`w-9 h-9 rounded-lg text-sm font-medium flex items-center justify-center transition ${letterFilter === l ? 'bg-sky-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
+              className={`w-9 h-9 rounded-lg text-sm font-medium flex items-center justify-center transition ${letterFilter === l ? 'bg-sky-500 text-white' : 'bg-gray-100 dark:bg-dark-hover text-gray-600 dark:text-dark-text'}`}
             >
               {l}
             </button>
@@ -548,16 +548,16 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
             <button
               key={item.word}
               onClick={() => onOpenWord(item)}
-              className="bg-white dark:bg-gray-800 rounded-xl p-3 text-left shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition active:scale-95"
+              className="bg-white dark:bg-dark-card rounded-xl p-3 text-left shadow-sm border border-gray-100 dark:border-dark-border hover:shadow-md transition active:scale-95"
             >
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-gray-900 dark:text-white">{item.word}</span>
+                <span className="font-semibold text-gray-900 dark:text-dark-text">{item.word}</span>
                 <div className="flex items-center gap-1">
                   <LevelTag word={item.word} />
                   {isFavorite(item.word) && <Star size={14} className="text-yellow-400 fill-yellow-400" />}
                 </div>
               </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 line-clamp-1">
+              <div className="text-xs text-gray-400 dark:text-dark-muted mt-1 line-clamp-1">
                 {item.content?.substring(0, 40).replace(/[#*\n]/g, '')}...
               </div>
             </button>
@@ -712,15 +712,15 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
     return (
       <div className="p-4">
         {/* 进度概览 */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-4">
+        <div className="bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-gray-100 dark:border-dark-border p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-500 dark:text-gray-400">第 {plan.currentDay} / {plan.totalDays} 天</span>
+            <span className="text-sm text-gray-500 dark:text-dark-muted">第 {plan.currentDay} / {plan.totalDays} 天</span>
             <span className="text-sm font-bold text-sky-500">{overallProgress}%</span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
             <div className="bg-sky-500 h-2 rounded-full transition-all" style={{width: `${overallProgress}%`}}></div>
           </div>
-          <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
+          <div className="flex items-center justify-between text-xs text-gray-400 dark:text-dark-muted">
             <span>今日进度: {masteredCount}/{dailyWords.length} ({progress}%)</span>
             <button onClick={resetPlan} className="text-red-400">重置计划</button>
           </div>
@@ -734,12 +734,12 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
               <div
                 key={item.word}
                 onClick={() => { markAsStudied(item.word); setStudyContext({ words: dailyWords, currentIndex: idx }); onOpenWord(item) }}
-                className={`bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border transition cursor-pointer active:scale-[0.98] ${isMastered ? 'border-green-200 bg-green-50/50' : 'border-gray-100 dark:border-gray-700'}`}
+                className={`bg-white dark:bg-dark-card rounded-xl p-3 shadow-sm border transition cursor-pointer active:scale-[0.98] ${isMastered ? 'border-green-200 bg-green-50/50' : 'border-gray-100 dark:border-dark-border'}`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-xs text-gray-400 w-6">{idx + 1}</span>
-                    <span className="font-semibold text-gray-900 dark:text-white truncate">{item.word}</span>
+                    <span className="font-semibold text-gray-900 dark:text-dark-text truncate">{item.word}</span>
                     <LevelTag word={item.word} />
                   </div>
                   <button
@@ -791,7 +791,7 @@ function StudyPlanSetup({ levelOptions, countOptions, onStart }) {
 
   return (
     <div className="p-4">
-      <div className="bg-sky-50 dark:bg-gray-800 rounded-2xl p-4 mb-4">
+      <div className="bg-sky-50 dark:bg-dark-card rounded-2xl p-4 mb-4">
         <div className="flex items-center gap-2 mb-1">
           <GraduationCap size={20} className="text-sky-500" />
           <h2 className="text-lg font-bold text-sky-700">学习计划</h2>
@@ -800,7 +800,7 @@ function StudyPlanSetup({ levelOptions, countOptions, onStart }) {
       </div>
 
       <div className="mb-4">
-        <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">选择词库</div>
+        <div className="text-sm font-semibold text-gray-700 dark:text-dark-text mb-2">选择词库</div>
         <div className="grid grid-cols-3 gap-2">
           {levelOptions.map(opt => (
             <button
@@ -808,33 +808,33 @@ function StudyPlanSetup({ levelOptions, countOptions, onStart }) {
               onClick={() => setSelectedLevel(opt.id)}
               className={`p-3 rounded-xl border-2 text-center transition ${selectedLevel === opt.id ? 'border-sky-500 bg-sky-50' : opt.color}`}
             >
-              <div className="font-semibold text-gray-900 dark:text-white text-sm">{opt.label}</div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{opt.desc}</div>
+              <div className="font-semibold text-gray-900 dark:text-dark-text text-sm">{opt.label}</div>
+              <div className="text-xs text-gray-400 dark:text-dark-muted mt-0.5">{opt.desc}</div>
             </button>
           ))}
         </div>
       </div>
 
       <div className="mb-4">
-        <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">每日单词数</div>
+        <div className="text-sm font-semibold text-gray-700 dark:text-dark-text mb-2">每日单词数</div>
         <div className="grid grid-cols-3 gap-2">
           {countOptions.map(c => (
             <button
               key={c}
               onClick={() => setSelectedCount(c)}
-              className={`p-3 rounded-xl border-2 text-center transition ${selectedCount === c ? 'border-sky-500 bg-sky-50' : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800'}`}
+              className={`p-3 rounded-xl border-2 text-center transition ${selectedCount === c ? 'border-sky-500 bg-sky-50' : 'border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card'}`}
             >
-              <div className="font-semibold text-gray-900 dark:text-white text-sm">{c} 个/天</div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{c <= 10 ? '轻松' : c <= 20 ? '适中' : '挑战'}</div>
+              <div className="font-semibold text-gray-900 dark:text-dark-text text-sm">{c} 个/天</div>
+              <div className="text-xs text-gray-400 dark:text-dark-muted mt-0.5">{c <= 10 ? '轻松' : c <= 20 ? '适中' : '挑战'}</div>
             </button>
           ))}
         </div>
       </div>
 
       {canStart && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4 mb-4">
+        <div className="bg-white dark:bg-dark-card rounded-xl border border-gray-100 dark:border-dark-border p-4 mb-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500 dark:text-gray-400">预计学习周期</span>
+            <span className="text-gray-500 dark:text-dark-muted">预计学习周期</span>
             <span className="font-bold text-sky-500">{totalDays} 天</span>
           </div>
         </div>
@@ -843,7 +843,7 @@ function StudyPlanSetup({ levelOptions, countOptions, onStart }) {
       <button
         onClick={() => onStart(selectedLevel, selectedCount)}
         disabled={!canStart}
-        className={`w-full py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 ${canStart ? 'bg-sky-500 text-white hover:bg-sky-600' : 'bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+        className={`w-full py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2 ${canStart ? 'bg-sky-500 text-white hover:bg-sky-600' : 'bg-gray-200 dark:bg-dark-hover text-gray-400 cursor-not-allowed'}`}
       >
         <Play size={18} />
         开始学习
@@ -870,13 +870,13 @@ function FavoritesView({ favorites, wordsList, onOpenWord, isFavorite, onToggleF
       <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">已收藏 {favorites.length} 个单词</div>
       <div className="space-y-2">
         {favWords.map(item => (
-          <div key={item.word} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between">
+          <div key={item.word} className="bg-white dark:bg-dark-card rounded-xl p-4 shadow-sm border border-gray-100 dark:border-dark-border flex items-center justify-between">
             <button onClick={() => onOpenWord(item)} className="flex-1 text-left">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-900 dark:text-white">{item.word}</span>
+                <span className="font-semibold text-gray-900 dark:text-dark-text">{item.word}</span>
                 <LevelTag word={item.word} />
               </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 line-clamp-1">
+              <div className="text-xs text-gray-400 dark:text-dark-muted mt-1 line-clamp-1">
                 {item.content?.substring(0, 60).replace(/[#*\n]/g, '')}...
               </div>
             </button>
@@ -892,15 +892,15 @@ function FavoritesView({ favorites, wordsList, onOpenWord, isFavorite, onToggleF
 
 function CoverageReport({ onClose }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/70 flex items-end sm:items-center justify-center" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 w-full max-w-md max-h-[85vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">词汇覆盖率报告</h2>
+    <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/80 flex items-end sm:items-center justify-center" onClick={onClose}>
+      <div className="bg-white dark:bg-dark-card w-full max-w-md max-h-[85vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-dark-border">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-dark-text">词汇覆盖率报告</h2>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100"><X size={20} /></button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 dark:text-gray-300">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 dark:text-dark-text">
           {/* 总词数 */}
-          <div className="bg-sky-50 dark:bg-gray-800 rounded-xl p-4 text-center">
+          <div className="bg-sky-50 dark:bg-dark-card rounded-xl p-4 text-center">
             <div className="text-sm text-sky-600">词库总量</div>
             <div className="text-3xl font-bold text-sky-500">13,750</div>
             <div className="text-xs text-sky-400 mt-1">涵盖四六级 + 专四专八</div>
@@ -908,52 +908,52 @@ function CoverageReport({ onClose }) {
 
           {/* 四六级覆盖率 */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-dark-text flex items-center gap-2">
               <BarChart3 size={18} className="text-sky-500" />
               四六级覆盖率
             </h3>
 
-            <div className="bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 p-3">
+            <div className="bg-white dark:bg-dark-hover rounded-xl border border-gray-100 dark:border-dark-border p-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">CET-4</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-dark-text">CET-4</span>
                 <span className="text-sm font-bold text-green-500">99.96%</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-2">
                 <div className="bg-green-500 h-2 rounded-full" style={{width: '99.96%'}}></div>
               </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">4,541 / 4,543 词</div>
+              <div className="text-xs text-gray-400 dark:text-dark-muted mt-1">4,541 / 4,543 词</div>
             </div>
 
-            <div className="bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 p-3">
+            <div className="bg-white dark:bg-dark-hover rounded-xl border border-gray-100 dark:border-dark-border p-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">CET-6</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-dark-text">CET-6</span>
                 <span className="text-sm font-bold text-green-500">99.95%</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-2">
                 <div className="bg-green-500 h-2 rounded-full" style={{width: '99.95%'}}></div>
               </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">3,989 / 3,991 词</div>
+              <div className="text-xs text-gray-400 dark:text-dark-muted mt-1">3,989 / 3,991 词</div>
             </div>
 
-            <div className="bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 p-3">
+            <div className="bg-white dark:bg-dark-hover rounded-xl border border-gray-100 dark:border-dark-border p-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">CET-4 + CET-6 合并</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-dark-text">CET-4 + CET-6 合并</span>
                 <span className="text-sm font-bold text-green-500">99.94%</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-2">
                 <div className="bg-green-500 h-2 rounded-full" style={{width: '99.94%'}}></div>
               </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">6,657 / 6,661 词</div>
+              <div className="text-xs text-gray-400 dark:text-dark-muted mt-1">6,657 / 6,661 词</div>
             </div>
           </div>
 
           {/* 未覆盖词汇 */}
           <div className="space-y-2">
-            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-dark-text flex items-center gap-2">
               <XCircle size={18} className="text-orange-500" />
               未覆盖词汇（仅 4 个）
             </h3>
-            <div className="bg-orange-50 dark:bg-gray-800 rounded-xl p-3 space-y-2">
+            <div className="bg-orange-50 dark:bg-dark-card rounded-xl p-3 space-y-2">
               <div className="flex items-start gap-2">
                 <span className="text-xs bg-orange-200 text-orange-700 px-1.5 py-0.5 rounded">CET-4</span>
                 <div className="text-sm">
@@ -987,35 +987,35 @@ function CoverageReport({ onClose }) {
 
           {/* 专四专八覆盖率 */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-dark-text flex items-center gap-2">
               <GraduationCap size={18} className="text-orange-500" />
               专四专八覆盖率
             </h3>
 
-            <div className="bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 p-3">
+            <div className="bg-white dark:bg-dark-hover rounded-xl border border-gray-100 dark:border-dark-border p-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">TEM-4 专四</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-dark-text">TEM-4 专四</span>
                 <span className="text-sm font-bold text-green-500">2,378 词</span>
               </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">词库中已包含的专四词汇</div>
+              <div className="text-xs text-gray-400 dark:text-dark-muted mt-1">词库中已包含的专四词汇</div>
             </div>
 
-            <div className="bg-white dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 p-3">
+            <div className="bg-white dark:bg-dark-hover rounded-xl border border-gray-100 dark:border-dark-border p-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">TEM-8 专八</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-dark-text">TEM-8 专八</span>
                 <span className="text-sm font-bold text-green-500">3,418 词</span>
               </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">词库中已包含的专八词汇</div>
+              <div className="text-xs text-gray-400 dark:text-dark-muted mt-1">词库中已包含的专八词汇</div>
             </div>
           </div>
 
           {/* 专四专八词汇 */}
           <div className="space-y-2">
-            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-dark-text flex items-center gap-2">
               <CheckCircle size={18} className="text-sky-500" />
               专四专八词汇
             </h3>
-            <div className="bg-sky-50 dark:bg-gray-800 rounded-xl p-3">
+            <div className="bg-sky-50 dark:bg-dark-card rounded-xl p-3">
               <div className="text-sm text-sky-700 dark:text-sky-300">
                 本词库包含 <span className="font-bold">2,378</span> 个 TEM-4（专业四级）词汇和 <span className="font-bold">3,418</span> 个 TEM-8（专业八级）词汇，适合英语专业学生备考使用。
               </div>
@@ -1023,7 +1023,7 @@ function CoverageReport({ onClose }) {
           </div>
 
           {/* 数据来源 */}
-          <div className="flex items-start gap-2 text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 rounded-xl p-3">
+          <div className="flex items-start gap-2 text-xs text-gray-400 dark:text-dark-muted bg-gray-50 dark:bg-dark-hover rounded-xl p-3">
             <Info size={14} className="mt-0.5 shrink-0" />
             <div>
               数据来源：github.com/Ceelog/DictionaryByGPT4（GPT-4 生成解析）<br/>
@@ -1090,14 +1090,14 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
 
   return (
     <div className="p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-gray-100 dark:border-dark-border overflow-hidden">
         <button
           onClick={() => setShowCoverage(true)}
-          className="w-full p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition text-left"
+          className="w-full p-4 border-b border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-hover transition text-left"
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">词库总量</div>
+              <div className="text-sm text-gray-500 dark:text-dark-muted">词库总量</div>
               <div className="text-2xl font-bold text-sky-500">{totalWords.toLocaleString()}</div>
             </div>
             <div className="flex items-center gap-1 text-sky-500 text-sm">
@@ -1107,7 +1107,7 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
           </div>
         </button>
         <div className="p-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">已收藏</div>
+          <div className="text-sm text-gray-500 dark:text-dark-muted">已收藏</div>
           <div className="text-2xl font-bold text-sky-500">{favoritesCount}</div>
         </div>
       </div>
@@ -1116,15 +1116,15 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
       <div className="mt-4">
         <button
           onClick={onToggleDarkMode}
-          className="w-full p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition text-left flex items-center justify-between"
+          className="w-full p-4 border-b border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-hover transition text-left flex items-center justify-between"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <Moon size={18} className="text-gray-600 dark:text-gray-300" />
+            <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-dark-hover flex items-center justify-center">
+              <Moon size={18} className="text-gray-600 dark:text-dark-text" />
             </div>
             <div>
-              <div className="text-sm font-medium text-gray-900 dark:text-white">深色模式</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{darkMode ? '已开启' : '已关闭'}</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-dark-text">深色模式</div>
+              <div className="text-xs text-gray-500 dark:text-dark-muted">{darkMode ? '已开启' : '已关闭'}</div>
             </div>
           </div>
           <div className={`w-12 h-6 rounded-full transition ${darkMode ? 'bg-gray-700' : 'bg-gray-300'} relative`}>
@@ -1133,41 +1133,41 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
         </button>
       </div>
 
-      <div className="mt-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="mt-6 bg-white dark:bg-dark-card rounded-2xl shadow-sm border border-gray-100 dark:border-dark-border overflow-hidden">
         <button
           onClick={onOpenActivate}
-          className={`w-full p-4 text-left border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition flex items-center justify-between ${isActivated ? 'text-green-600' : 'text-yellow-600'}`}
+          className={`w-full p-4 text-left border-b border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-hover transition flex items-center justify-between ${isActivated ? 'text-green-600' : 'text-yellow-600'}`}
         >
           <span>激活授权</span>
           <span className="text-sm font-medium">{isActivated ? '已激活' : '未激活'}</span>
         </button>
         <button
           onClick={exportData}
-          className="w-full p-4 text-left text-sky-600 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+          className="w-full p-4 text-left text-sky-600 border-b border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-hover transition"
         >
           导出学习记录
         </button>
         <button
           onClick={importData}
-          className="w-full p-4 text-left text-sky-600 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+          className="w-full p-4 text-left text-sky-600 border-b border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-hover transition"
         >
           导入学习记录
         </button>
         <button
           onClick={() => { if (confirm('确定要清空浏览历史吗？')) onClearHistory() }}
-          className="w-full p-4 text-left text-red-500 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+          className="w-full p-4 text-left text-red-500 border-b border-gray-100 dark:border-dark-border hover:bg-gray-50 dark:hover:bg-dark-hover transition"
         >
           清空浏览历史
         </button>
         <button
           onClick={() => { if (confirm('确定要清空所有收藏吗？')) onClearFavorites() }}
-          className="w-full p-4 text-left text-red-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+          className="w-full p-4 text-left text-red-500 hover:bg-gray-50 dark:hover:bg-dark-hover transition"
         >
           清空收藏
         </button>
       </div>
 
-      <div className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
+      <div className="mt-6 text-center text-xs text-gray-400 dark:text-dark-muted">
         <p>GPT 单词本 v2.0.0</p>
         <p className="mt-1">新增音标显示 + TTS 发音</p>
         <p className="mt-1">数据来源: github.com/Ceelog/DictionaryByGPT4</p>
@@ -1277,13 +1277,13 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady, 
 
   return (
     <div
-      className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900"
+      className="h-screen flex flex-col bg-gray-50 dark:bg-dark-bg"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       style={{ touchAction: 'pan-y' }}
     >
-      <header className="bg-sky-500 dark:bg-gray-800 text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <header className="bg-sky-500 dark:bg-dark-card text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="px-4 py-3 flex items-center justify-between">
           <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-sky-400 transition">
             <ChevronLeft size={24} />
@@ -1296,9 +1296,9 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady, 
       </header>
 
       <div className="flex-1 overflow-y-auto p-4" style={{ touchAction: 'pan-y' }}>
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-dark-card rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-dark-border">
           <div className="flex items-center gap-3 mb-2">
-            <div className="text-3xl font-bold text-gray-900 dark:text-white">{wordData.word}</div>
+            <div className="text-3xl font-bold text-gray-900 dark:text-dark-text">{wordData.word}</div>
             <LevelTag word={wordData.word} />
             <button
               onClick={speak}
@@ -1313,7 +1313,7 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady, 
               /{wordData.ipa}/
             </div>
           )}
-          <div className="markdown-content text-sm dark:text-gray-300">
+          <div className="markdown-content text-sm dark:text-dark-text">
             <ReactMarkdown>{wordData.content || ''}</ReactMarkdown>
           </div>
         </div>

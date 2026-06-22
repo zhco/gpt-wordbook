@@ -10,6 +10,10 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icon-192x192.png" />
     <script>
+      // 在页面渲染前设置深色模式，避免闪烁
+      if (localStorage.getItem('gptwordbook_darkmode') === 'true') {
+        document.documentElement.classList.add('dark')
+      }
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
@@ -17,7 +21,7 @@
       }
     </script>
   </head>
-  <body class="bg-gray-50">
+  <body class="bg-gray-50 dark:bg-dark-bg">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

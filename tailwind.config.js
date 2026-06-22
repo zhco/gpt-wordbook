@@ -19,6 +19,14 @@ export default {
           700: '#0369a1',
           800: '#075985',
           900: '#0c4a6e',
+        },
+        dark: {
+          bg: '#0d1117',
+          card: '#161b22',
+          border: '#30363d',
+          text: '#c9d1d9',
+          muted: '#8b949e',
+          hover: '#1c2128',
         }
       }
     },
