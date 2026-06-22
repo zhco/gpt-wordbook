@@ -142,15 +142,67 @@ jobs:
 
           print(f"Supplemented {found} words from ECDICT, {with_examples} with examples")
 
-          # Get example sentences from Free Dictionary API for all ECDICT-supplemented words
+          # Download Youdao dict data for TEM-4/TEM-8 example sentences
+          import zipfile, io
+          youdao_examples = {}
+          for youdao_url in [
+              'https://github.com/kajweb/dict/raw/master/book/1521164625401_Level4luan_2.zip',  # 专四核心词汇 4025词
+              'https://github.com/kajweb/dict/raw/master/book/1521164650006_Level8luan_2.zip',  # 专八核心词汇 12197词
+          ]:
+              print(f"Downloading Youdao dict: {youdao_url.split('/')[-1]}...")
+              try:
+                  yr = requests.get(youdao_url, timeout=120)
+                  yr.raise_for_status()
+                  with zipfile.ZipFile(io.BytesIO(yr.content)) as z:
+                      for name in z.namelist():
+                          if name.endswith('.json'):
+                              with z.open(name) as f:
+                                  for line in f:
+                                      try:
+                                          obj = json.loads(line)
+                                          hw = obj.get('headWord', '').lower()
+                                          if not hw:
+                                              continue
+                                          content = obj.get('content', {})
+                                          word_data = content.get('word', {})
+                                          word_content = word_data.get('content', {})
+                                          sentences = word_content.get('sentence', {}).get('sentences', [])
+                                          if sentences:
+                                              if hw not in youdao_examples:
+                                                  youdao_examples[hw] = []
+                                              for s in sentences[:3]:
+                                                  en = s.get('sContent', '')
+                                                  cn = s.get('sCn', '')
+                                                  if en:
+                                                      youdao_examples[hw].append(f"{en}")
+                                                      if cn:
+                                                          youdao_examples[hw].append(f"{cn}")
+                                      except:
+                                          pass
+                  print(f"  Got examples for {len(youdao_examples)} words from this file")
+              except Exception as e:
+                  print(f"  Failed to download: {e}")
+
+          # Apply Youdao examples to ECDICT-supplemented words
+          youdao_count = 0
+          for word_key in list(words.keys()):
+              w = word_key.lower()
+              if w in youdao_examples and '### 例句' not in words[word_key].get('content', ''):
+                  exs = youdao_examples[w]
+                  content = words[word_key]['content'].rstrip() + "\n\n### 例句\n\n"
+                  for i, ex in enumerate(exs[:6], 1):
+                      content += f"{i}. {ex}\n"
+                  words[word_key]['content'] = content
+                  youdao_count += 1
+          print(f"Applied Youdao examples to {youdao_count} words")
+
+          # Get example sentences from Free Dictionary API for remaining words without examples
           ecdict_supplemented = [w for w in words.keys() if w.lower() in needed]
-          print(f"Fetching examples from Free Dictionary API for {len(ecdict_supplemented)} words...")
+          no_examples = [w for w in ecdict_supplemented if '### 例句' not in words[w].get('content', '')]
+          print(f"Still need examples: {len(no_examples)} words, trying Free Dictionary API...")
           api_with_examples = 0
           api_total = 0
-          for idx, word in enumerate(ecdict_supplemented):
-              # Skip if already has examples from ECDICT detail
-              if '### 例句' in words[word].get('content', ''):
-                  continue
+          for idx, word in enumerate(no_examples):
               try:
                   resp = requests.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}", timeout=5)
                   if resp.status_code == 200:
