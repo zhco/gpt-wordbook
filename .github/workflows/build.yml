@@ -59,15 +59,11 @@ jobs:
       - name: Download ECDICT and supplement TEM-4/TEM-8 words
         run: |
           python3 << 'PYEOF'
-          import json, csv, gzip, io, requests
+          import json, csv, gzip, io, requests, time
 
           # Load existing words
           with open('src/data/words.json', 'r') as f:
               words = json.load(f)
-
-          # Load word levels
-          with open('src/data/word-levels.json', 'r') as f:
-              levels = json.load(f)
 
           # Read TEM-4/TEM-8 word list
           tem4_words = set()
@@ -105,13 +101,35 @@ jobs:
           reader = csv.DictReader(text_stream)
 
           found = 0
+          missing_after_ecdict = set()
           for row in reader:
               word = row['word'].lower()
               if word in needed:
                   content = row['translation'] or row['definition'] or ''
                   content = content.replace('\\n', '\n')
-                  # Format content like GPT-4 style
+                  # Try to get example sentences from ECDICT detail field
+                  detail = row.get('detail', '') or ''
+                  examples = []
+                  if detail:
+                      try:
+                          detail_obj = json.loads(detail)
+                          if isinstance(detail_obj, list):
+                              for item in detail_obj[:3]:  # max 3 examples
+                                  if isinstance(item, dict):
+                                      en = item.get('en', '') or item.get('example', '')
+                                      cn = item.get('cn', '') or item.get('translation', '')
+                                      if en:
+                                          examples.append(f"{en}")
+                                          if cn:
+                                              examples.append(f"{cn}")
+                      except:
+                          pass
+                  # Format content with examples
                   formatted = f"### 释义\n\n{content}\n"
+                  if examples:
+                      formatted += "\n### 例句\n\n"
+                      for i, ex in enumerate(examples[:6], 1):
+                          formatted += f"{i}. {ex}\n"
                   words[row['word']] = {
                       'word': row['word'],
                       'content': formatted,
@@ -122,6 +140,47 @@ jobs:
                       print(f"  Found {found}/{len(needed)}")
 
           print(f"Supplemented {found} words from ECDICT")
+
+          # For words not found in ECDICT, try Free Dictionary API (limited to avoid timeout)
+          still_missing = needed - set(w.lower() for w in words.keys())
+          if still_missing:
+              print(f"Still missing: {len(still_missing)} words, trying Free Dictionary API...")
+              api_count = 0
+              for word in list(still_missing)[:200]:  # limit to 200 to avoid timeout
+                  try:
+                      resp = requests.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}", timeout=5)
+                      if resp.status_code == 200:
+                          data = resp.json()
+                          meanings = data[0].get('meanings', [])
+                          phonetic = data[0].get('phonetic', '')
+                          # Build content
+                          defs = []
+                          examples = []
+                          for m in meanings:
+                              pos = m.get('partOfSpeech', '')
+                              for d in m.get('definitions', []):
+                                  def_text = d.get('definition', '')
+                                  if def_text:
+                                      defs.append(f"{pos}: {def_text}" if pos else def_text)
+                                  ex = d.get('example', '')
+                                  if ex and len(examples) < 6:
+                                      examples.append(ex)
+                          content = "\n".join(defs[:5])
+                          formatted = f"### 释义\n\n{content}\n"
+                          if examples:
+                              formatted += "\n### 例句\n\n"
+                              for i, ex in enumerate(examples, 1):
+                                  formatted += f"{i}. {ex}\n"
+                          words[word] = {
+                              'word': word,
+                              'content': formatted,
+                              'ipa': phonetic
+                          }
+                          api_count += 1
+                      time.sleep(0.1)  # rate limiting
+                  except Exception as e:
+                      pass
+              print(f"Added {api_count} words from Free Dictionary API")
 
           # Save updated words.json
           with open('src/data/words.json', 'w', encoding='utf-8') as f:
