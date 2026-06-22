@@ -142,19 +142,55 @@ jobs:
 
           print(f"Supplemented {found} words from ECDICT, {with_examples} with examples")
 
-          # For words not found in ECDICT, try Free Dictionary API (limited to avoid timeout)
+          # Get example sentences from Free Dictionary API for all ECDICT-supplemented words
+          ecdict_supplemented = [w for w in words.keys() if w.lower() in needed]
+          print(f"Fetching examples from Free Dictionary API for {len(ecdict_supplemented)} words...")
+          api_with_examples = 0
+          api_total = 0
+          for idx, word in enumerate(ecdict_supplemented):
+              # Skip if already has examples from ECDICT detail
+              if '### 例句' in words[word].get('content', ''):
+                  continue
+              try:
+                  resp = requests.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}", timeout=5)
+                  if resp.status_code == 200:
+                      data = resp.json()
+                      meanings = data[0].get('meanings', [])
+                      # Collect examples
+                      examples = []
+                      for m in meanings:
+                          for d in m.get('definitions', []):
+                              ex = d.get('example', '')
+                              if ex and len(examples) < 3:
+                                  examples.append(ex)
+                      if examples:
+                          # Append examples to existing content
+                          content = words[word]['content'].rstrip() + "\n\n### 例句\n\n"
+                          for i, ex in enumerate(examples, 1):
+                              content += f"{i}. {ex}\n"
+                          words[word]['content'] = content
+                          api_with_examples += 1
+                      api_total += 1
+                  time.sleep(0.05)  # rate limiting
+              except Exception as e:
+                  pass
+              if (idx + 1) % 500 == 0:
+                  print(f"  Processed {idx + 1}/{len(ecdict_supplemented)} (got examples: {api_with_examples})")
+
+          print(f"Free Dictionary API: {api_total} words found, {api_with_examples} with examples")
+
+          # For words not found in ECDICT, try Free Dictionary API for full data
           still_missing = needed - set(w.lower() for w in words.keys())
           if still_missing:
-              print(f"Still missing: {len(still_missing)} words, trying Free Dictionary API...")
+              print(f"Still missing: {len(still_missing)} words, trying Free Dictionary API for full data...")
               api_count = 0
-              for word in list(still_missing)[:200]:  # limit to 200 to avoid timeout
+              for word in list(still_missing)[:200]:
                   try:
                       resp = requests.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}", timeout=5)
                       if resp.status_code == 200:
                           data = resp.json()
                           meanings = data[0].get('meanings', [])
                           phonetic = data[0].get('phonetic', '')
-                          # Build content
                           defs = []
                           examples = []
                           for m in meanings:
@@ -164,7 +200,7 @@ jobs:
                                   if def_text:
                                       defs.append(f"{pos}: {def_text}" if pos else def_text)
                                   ex = d.get('example', '')
-                                  if ex and len(examples) < 6:
+                                  if ex and len(examples) < 3:
                                       examples.append(ex)
                           content = "\n".join(defs[:5])
                           formatted = f"### 释义\n\n{content}\n"
@@ -178,7 +214,7 @@ jobs:
                               'ipa': phonetic
                           }
                           api_count += 1
-                      time.sleep(0.1)  # rate limiting
+                      time.sleep(0.05)
                   except Exception as e:
                       pass
               print(f"Added {api_count} words from Free Dictionary API")
