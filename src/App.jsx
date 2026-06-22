@@ -3,7 +3,6 @@ import { Search, BookOpen, Heart, ChevronLeft, Star, Shuffle, Settings, X, Volum
 import ReactMarkdown from 'react-markdown'
 import Fuse from 'fuse.js'
 import { registerPlugin } from '@capacitor/core'
-import { App as CapApp } from '@capacitor/app'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
 import { Device } from '@capacitor/device'
 import { Browser } from '@capacitor/browser'
@@ -183,41 +182,6 @@ function App() {
     }
     setActivateLoading(false)
   }
-
-  // App 进入后台时自动备份学习记录
-  useEffect(() => {
-    const autoBackup = async () => {
-      try {
-        const data = {
-          favorites: localStorage.getItem('gptwordbook_favorites') || '[]',
-          history: localStorage.getItem('gptwordbook_history') || '[]',
-          mastered: localStorage.getItem('gptwordbook_mastered') || '{}',
-          plan: localStorage.getItem('gptwordbook_study_plan') || 'null',
-          backupAt: new Date().toISOString(),
-        }
-        await Filesystem.writeFile({
-          path: 'gpt-wordbook-auto-backup.json',
-          data: JSON.stringify(data),
-          directory: Directory.Documents,
-          encoding: Encoding.UTF8,
-        })
-        console.log('Auto backup saved to Documents/gpt-wordbook-auto-backup.json')
-      } catch (e) {
-        console.warn('Auto backup failed:', e)
-      }
-    }
-
-    const listener = CapApp.addListener('appStateChange', ({ isActive }) => {
-      if (!isActive) {
-        // App 进入后台，自动备份
-        autoBackup()
-      }
-    })
-
-    return () => {
-      listener.then(l => l.remove())
-    }
-  }, [])
 
   // Android 返回键处理：左滑/返回键 → 返回上级而非退出 App
   useEffect(() => {
@@ -1046,7 +1010,7 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
         plan: localStorage.getItem('gptwordbook_study_plan') || 'null',
         exportedAt: new Date().toISOString(),
       }
-      const fileName = `gpt-wordbook-backup-${new Date().toISOString().split('T')[0]}.json`
+      const fileName = 'gpt-wordbook-backup.json'
       await Filesystem.writeFile({
         path: fileName,
         data: JSON.stringify(data, null, 2),
