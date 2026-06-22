@@ -174,9 +174,10 @@ jobs:
                                                   en = s.get('sContent', '')
                                                   cn = s.get('sCn', '')
                                                   if en:
-                                                      youdao_examples[hw].append(f"{en}")
+                                                      pair = f"{en}"
                                                       if cn:
-                                                          youdao_examples[hw].append(f"{cn}")
+                                                          pair += f"\n{cn}"
+                                                      youdao_examples[hw].append(pair)
                                       except:
                                           pass
                   print(f"  Got examples for {len(youdao_examples)} words from this file")
