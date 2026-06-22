@@ -56,6 +56,80 @@ jobs:
           "
           npm uninstall phonemize
 
+      - name: Download ECDICT and supplement TEM-4/TEM-8 words
+        run: |
+          python3 << 'PYEOF'
+          import json, csv, gzip, io, requests
+
+          # Load existing words
+          with open('src/data/words.json', 'r') as f:
+              words = json.load(f)
+
+          # Load word levels
+          with open('src/data/word-levels.json', 'r') as f:
+              levels = json.load(f)
+
+          # Read TEM-4/TEM-8 word list
+          tem4_words = set()
+          tem8_words = set()
+          with open('src/data/tem4_tem8_raw.txt', 'r', encoding='utf-8') as f:
+              for line in f:
+                  line = line.strip()
+                  if not line:
+                      continue
+                  if line.startswith('*'):
+                      word = line[1:].split()[0].replace(',', '').replace(';', '').lower()
+                      tem8_words.add(word)
+                  else:
+                      word = line.split()[0].replace(',', '').replace(';', '').lower()
+                      tem4_words.add(word)
+
+          # Find missing words
+          existing = set(w.lower() for w in words.keys())
+          needed = (tem4_words | tem8_words) - existing
+          print(f"Need to supplement: {len(needed)} words")
+
+          if len(needed) == 0:
+              print("No words need supplement")
+              exit(0)
+
+          # Download ECDICT CSV (gzip compressed)
+          print("Downloading ECDICT...")
+          url = "https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv"
+          response = requests.get(url, stream=True, timeout=600)
+          response.raise_for_status()
+
+          # Parse gzip CSV
+          decompressor = gzip.GzipFile(fileobj=response.raw)
+          text_stream = io.TextIOWrapper(decompressor, encoding='utf-8')
+          reader = csv.DictReader(text_stream)
+
+          found = 0
+          for row in reader:
+              word = row['word'].lower()
+              if word in needed:
+                  content = row['translation'] or row['definition'] or ''
+                  content = content.replace('\\n', '\n')
+                  # Format content like GPT-4 style
+                  formatted = f"### 释义\n\n{content}\n"
+                  words[row['word']] = {
+                      'word': row['word'],
+                      'content': formatted,
+                      'ipa': row['phonetic'] or ''
+                  }
+                  found += 1
+                  if found % 500 == 0:
+                      print(f"  Found {found}/{len(needed)}")
+
+          print(f"Supplemented {found} words from ECDICT")
+
+          # Save updated words.json
+          with open('src/data/words.json', 'w', encoding='utf-8') as f:
+              json.dump(words, f, ensure_ascii=False)
+
+          print(f"Total words: {len(words)}")
+          PYEOF
+
       - name: Build web app
         run: npm run build
 
@@ -94,7 +168,7 @@ jobs:
 
             ## 功能特性
             - 完全离线使用，无需网络
-            - 8714 个 GPT-4 深度解析单词
+            - 14000+ 单词（含专四专八）
             - IPA 国际音标显示
             - TTS 语音发音
             - 智能搜索（模糊匹配）
