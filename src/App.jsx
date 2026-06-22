@@ -356,7 +356,7 @@ function App() {
                 <button
                   onClick={submitActivation}
                   disabled={activateLoading || !activateCode.trim()}
-                  className={`w-full py-3 rounded-xl font-semibold mt-4 transition ${activateLoading || !activateCode.trim() ? 'bg-gray-200 dark:bg-gray-600 text-gray-400' : 'bg-sky-500 dark:bg-sky-600 text-white hover:bg-sky-600'}`}
+                  className={`w-full py-3 rounded-xl font-semibold mt-4 transition ${activateLoading || !activateCode.trim() ? 'bg-gray-200 dark:bg-gray-600 text-gray-400' : 'bg-sky-500 dark:bg-gray-700 text-white hover:bg-sky-600'}`}
                 >
                   {activateLoading ? '验证中...' : '立即激活'}
                 </button>
@@ -373,7 +373,7 @@ function App() {
         </div>
       )}
 
-      <header className="bg-sky-500 dark:bg-sky-700 text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <header className="bg-sky-500 dark:bg-gray-800 text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="px-4 py-3 flex items-center justify-between">
           <h1 className="text-lg font-bold">GPT 单词本</h1>
           <div className="flex items-center gap-2">
@@ -461,7 +461,7 @@ function App() {
           <FavoritesView favorites={favorites} wordsList={wordsList} onOpenWord={openWord} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
         )}
         {currentView === 'settings' && (
-          <SettingsView totalWords={wordsList.length} favoritesCount={favorites.length} onClearHistory={() => setHistory([])} onClearFavorites={() => setFavorites([])} isActivated={isActivated} onOpenActivate={() => setShowActivateModal(true)} />
+          <SettingsView totalWords={wordsList.length} favoritesCount={favorites.length} onClearHistory={() => setHistory([])} onClearFavorites={() => setFavorites([])} isActivated={isActivated} onOpenActivate={() => setShowActivateModal(true)} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(v => !v)} />
         )}
       </main>
 
@@ -791,7 +791,7 @@ function StudyPlanSetup({ levelOptions, countOptions, onStart }) {
 
   return (
     <div className="p-4">
-      <div className="bg-sky-50 dark:bg-sky-900/30 rounded-2xl p-4 mb-4">
+      <div className="bg-sky-50 dark:bg-gray-800 rounded-2xl p-4 mb-4">
         <div className="flex items-center gap-2 mb-1">
           <GraduationCap size={20} className="text-sky-500" />
           <h2 className="text-lg font-bold text-sky-700">学习计划</h2>
@@ -900,7 +900,7 @@ function CoverageReport({ onClose }) {
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4 dark:text-gray-300">
           {/* 总词数 */}
-          <div className="bg-sky-50 dark:bg-sky-900/30 rounded-xl p-4 text-center">
+          <div className="bg-sky-50 dark:bg-gray-800 rounded-xl p-4 text-center">
             <div className="text-sm text-sky-600">词库总量</div>
             <div className="text-3xl font-bold text-sky-500">13,750</div>
             <div className="text-xs text-sky-400 mt-1">涵盖四六级 + 专四专八</div>
@@ -953,7 +953,7 @@ function CoverageReport({ onClose }) {
               <XCircle size={18} className="text-orange-500" />
               未覆盖词汇（仅 4 个）
             </h3>
-            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-3 space-y-2">
+            <div className="bg-orange-50 dark:bg-gray-800 rounded-xl p-3 space-y-2">
               <div className="flex items-start gap-2">
                 <span className="text-xs bg-orange-200 text-orange-700 px-1.5 py-0.5 rounded">CET-4</span>
                 <div className="text-sm">
@@ -1015,7 +1015,7 @@ function CoverageReport({ onClose }) {
               <CheckCircle size={18} className="text-sky-500" />
               专四专八词汇
             </h3>
-            <div className="bg-sky-50 dark:bg-sky-900/30 rounded-xl p-3">
+            <div className="bg-sky-50 dark:bg-gray-800 rounded-xl p-3">
               <div className="text-sm text-sky-700 dark:text-sky-300">
                 本词库包含 <span className="font-bold">2,378</span> 个 TEM-4（专业四级）词汇和 <span className="font-bold">3,418</span> 个 TEM-8（专业八级）词汇，适合英语专业学生备考使用。
               </div>
@@ -1038,11 +1038,8 @@ function CoverageReport({ onClose }) {
   )
 }
 
-function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavorites, isActivated, onOpenActivate }) {
+function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavorites, isActivated, onOpenActivate, darkMode, onToggleDarkMode }) {
   const [showCoverage, setShowCoverage] = useState(false)
-  const [localDark, setLocalDark] = useState(() => {
-    try { return localStorage.getItem('gptwordbook_darkmode') === 'true' } catch { return false }
-  })
 
   const exportData = async () => {
     try {
@@ -1115,10 +1112,10 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
         </div>
       </div>
 
-      {/* 暗黑模式开关 */}
+      {/* 深色模式开关 */}
       <div className="mt-4">
         <button
-          onClick={() => { const v = !localDark; setLocalDark(v); localStorage.setItem('gptwordbook_darkmode', v); document.documentElement.classList.toggle('dark', v); window.location.reload() }}
+          onClick={onToggleDarkMode}
           className="w-full p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition text-left flex items-center justify-between"
         >
           <div className="flex items-center gap-3">
@@ -1126,12 +1123,12 @@ function SettingsView({ totalWords, favoritesCount, onClearHistory, onClearFavor
               <Moon size={18} className="text-gray-600 dark:text-gray-300" />
             </div>
             <div>
-              <div className="text-sm font-medium text-gray-900 dark:text-white">暗黑护眼模式</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{localDark ? '已开启' : '已关闭'}</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">深色模式</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{darkMode ? '已开启' : '已关闭'}</div>
             </div>
           </div>
-          <div className={`w-12 h-6 rounded-full transition ${localDark ? 'bg-sky-500' : 'bg-gray-300 dark:bg-gray-600'} relative`}>
-            <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition ${localDark ? 'left-6' : 'left-0.5'}`} />
+          <div className={`w-12 h-6 rounded-full transition ${darkMode ? 'bg-gray-700' : 'bg-gray-300'} relative`}>
+            <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition ${darkMode ? 'left-6' : 'left-0.5'}`} />
           </div>
         </button>
       </div>
@@ -1286,7 +1283,7 @@ function WordDetail({ wordData, onBack, isFavorite, onToggleFavorite, ttsReady, 
       onTouchEnd={handleTouchEnd}
       style={{ touchAction: 'pan-y' }}
     >
-      <header className="bg-sky-500 dark:bg-sky-700 text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <header className="bg-sky-500 dark:bg-gray-800 text-white" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="px-4 py-3 flex items-center justify-between">
           <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-sky-400 transition">
             <ChevronLeft size={24} />
