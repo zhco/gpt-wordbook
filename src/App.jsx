@@ -21,6 +21,8 @@ const LEVEL_CONFIG = {
   'cet4':   { label: '四级', color: 'bg-green-100 text-green-700' },
   'cet6':   { label: '六级', color: 'bg-blue-100 text-blue-700' },
   'cet4+6': { label: '四六级', color: 'bg-purple-100 text-purple-700' },
+  'tem4':   { label: '专四', color: 'bg-orange-100 text-orange-700' },
+  'tem8':   { label: '专八', color: 'bg-red-100 text-red-700' },
   'beyond': { label: '超纲', color: 'bg-gray-100 text-gray-500' },
 }
 
@@ -583,6 +585,8 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
       const wLevel = getWordLevel(item.word)
       if (level === 'cet4') return wLevel === 'cet4' || wLevel === 'cet4+6'
       if (level === 'cet6') return wLevel === 'cet6' || wLevel === 'cet4+6'
+      if (level === 'tem4') return wLevel === 'tem4'
+      if (level === 'tem8') return wLevel === 'tem8'
       return true // 'all'
     })
   }
@@ -676,6 +680,8 @@ function StudyView({ wordsList, studyView, setStudyView, onOpenWord, setStudyCon
     const levelOptions = [
       { id: 'cet4', label: 'CET-4 四级', desc: `${getWordsByLevel('cet4').length} 词`, color: 'border-green-400 bg-green-50' },
       { id: 'cet6', label: 'CET-6 六级', desc: `${getWordsByLevel('cet6').length} 词`, color: 'border-blue-400 bg-blue-50' },
+      { id: 'tem4', label: 'TEM-4 专四', desc: `${getWordsByLevel('tem4').length} 词`, color: 'border-orange-400 bg-orange-50' },
+      { id: 'tem8', label: 'TEM-8 专八', desc: `${getWordsByLevel('tem8').length} 词`, color: 'border-red-400 bg-red-50' },
       { id: 'all', label: '全部词汇', desc: `${wordsList.length} 词`, color: 'border-purple-400 bg-purple-50' },
     ]
     const countOptions = [5, 10, 15, 20, 30, 50]
