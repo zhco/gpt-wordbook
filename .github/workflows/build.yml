@@ -101,7 +101,7 @@ jobs:
           reader = csv.DictReader(text_stream)
 
           found = 0
-          missing_after_ecdict = set()
+          with_examples = 0
           for row in reader:
               word = row['word'].lower()
               if word in needed:
@@ -130,6 +130,7 @@ jobs:
                       formatted += "\n### 例句\n\n"
                       for i, ex in enumerate(examples[:6], 1):
                           formatted += f"{i}. {ex}\n"
+                      with_examples += 1
                   words[row['word']] = {
                       'word': row['word'],
                       'content': formatted,
@@ -137,9 +138,9 @@ jobs:
                   }
                   found += 1
                   if found % 500 == 0:
-                      print(f"  Found {found}/{len(needed)}")
+                      print(f"  Found {found}/{len(needed)} (with examples: {with_examples})")
 
-          print(f"Supplemented {found} words from ECDICT")
+          print(f"Supplemented {found} words from ECDICT, {with_examples} with examples")
 
           # For words not found in ECDICT, try Free Dictionary API (limited to avoid timeout)
           still_missing = needed - set(w.lower() for w in words.keys())
