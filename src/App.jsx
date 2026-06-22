@@ -6,6 +6,7 @@ import { registerPlugin } from '@capacitor/core'
 import { App as CapApp } from '@capacitor/app'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
 import { Device } from '@capacitor/device'
+import { Browser } from '@capacitor/browser'
 import wordData from './data/words.json'
 import wordLevels from './data/word-levels.json'
 
@@ -384,6 +385,12 @@ function App() {
                   className={`w-full py-3 rounded-xl font-semibold mt-4 transition ${activateLoading || !activateCode.trim() ? 'bg-gray-200 text-gray-400' : 'bg-sky-500 text-white hover:bg-sky-600'}`}
                 >
                   {activateLoading ? '验证中...' : '立即激活'}
+                </button>
+                <button
+                  onClick={() => Browser.open({ url: 'https://zhco.github.io/danci_auth.html' })}
+                  className="w-full py-3 rounded-xl font-semibold mt-2 bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
+                >
+                  如何获取激活码
                 </button>
                 <p className="text-xs text-gray-400 text-center mt-3">设备 ID: {deviceId.slice(0, 16)}...</p>
               </>
