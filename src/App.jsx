@@ -228,21 +228,40 @@ function App() {
   }, [selectedWord, showSearch, currentView])
 
   useEffect(() => {
-    const words = Object.entries(wordData).map(([word, data]) => ({ word, ...data }))
-    setWordsList(words)
-    setFuse(new Fuse(words, { keys: ['word'], threshold: 0.3, includeScore: true }))
-
-    const today = new Date().toDateString()
+    // 分批处理单词列表，避免阻塞主线程
+    const entries = Object.entries(wordData)
+    const BATCH_SIZE = 2000
+    let idx = 0
+    const allWords = []
+    const dailyToday = new Date().toDateString()
     const savedDaily = localStorage.getItem('gptwordbook_daily')
     const savedDate = localStorage.getItem('gptwordbook_daily_date')
-    if (savedDaily && savedDate === today) {
-      setDailyWord(JSON.parse(savedDaily))
-    } else {
-      const randomWord = words[Math.floor(Math.random() * words.length)]
-      setDailyWord(randomWord)
-      localStorage.setItem('gptwordbook_daily', JSON.stringify(randomWord))
-      localStorage.setItem('gptwordbook_daily_date', today)
+
+    function processBatch() {
+      const end = Math.min(idx + BATCH_SIZE, entries.length)
+      for (let i = idx; i < end; i++) {
+        allWords.push({ word: entries[i][0], ...entries[i][1] })
+      }
+      idx = end
+      // 每处理完一批就更新列表
+      setWordsList([...allWords])
+      if (idx < entries.length) {
+        setTimeout(processBatch, 0)
+      } else {
+        // 全部加载完成，初始化搜索
+        setFuse(new Fuse(allWords, { keys: ['word'], threshold: 0.3, includeScore: true }))
+        // 每日一词
+        if (savedDaily && savedDate === dailyToday) {
+          setDailyWord(JSON.parse(savedDaily))
+        } else {
+          const randomWord = allWords[Math.floor(Math.random() * allWords.length)]
+          setDailyWord(randomWord)
+          localStorage.setItem('gptwordbook_daily', JSON.stringify(randomWord))
+          localStorage.setItem('gptwordbook_daily_date', dailyToday)
+        }
+      }
     }
+    processBatch()
   }, [])
 
   useEffect(() => {
@@ -488,12 +507,12 @@ function App() {
 }
 
 function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
-  const [letterFilter, setLetterFilter] = useState('')
+  const [letterFilter, setLetterFilter] = useState('A')
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
   const filteredWords = letterFilter
-    ? wordsList.filter(w => w.word.toUpperCase().startsWith(letterFilter))
-    : wordsList
+    ? wordsList.filter(w => w.word.toUpperCase().startsWith(letterFilter)).slice(0, 200)
+    : wordsList.slice(0, 100)
 
   return (
     <div className="pb-4">
@@ -541,7 +560,7 @@ function HomeView({ dailyWord, onOpenWord, wordsList, isFavorite }) {
 
       <div className="mt-4 px-4">
         <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-          {letterFilter ? `以 "${letterFilter}" 开头的单词` : '热门单词'}
+          {letterFilter ? `以 "${letterFilter}" 开头的单词 (${filteredWords.length})` : `热门单词 (前 100 个)`}
         </div>
         <div className="grid grid-cols-2 gap-2">
           {filteredWords.map(item => (
